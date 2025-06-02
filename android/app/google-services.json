@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "8087077657",
+    "project_id": "kefaproject",
+    "storage_bucket": "kefaproject.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:8087077657:android:467a55e7833d38f661fb88",
+        "android_client_info": {
+          "package_name": "com.example.kefa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPwUFpW_GlUj7hfbQwzt8GIg5yLYotflk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
