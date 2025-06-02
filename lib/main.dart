@@ -1,304 +1,59 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart'; // Importar google_fonts
+import 'home_page.dart'; // Importar la pantalla principal
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
-// Punto de entrada de la app
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Elegimos una fuente serif de Google Fonts para títulos/subtítulos
+    // Y usamos la fuente por defecto de Material Design (generalmente Roboto/system sans-serif)
+    // para el resto del texto.
+    final TextTheme myTextTheme = TextTheme(
+      displayLarge: TextStyle(fontFamily: 'serif', fontSize: 96, fontWeight: FontWeight.w300, letterSpacing: -1.5),
+      displayMedium: TextStyle(fontFamily: 'serif', fontSize: 60, fontWeight: FontWeight.w300, letterSpacing: -0.5),
+      displaySmall: TextStyle(fontFamily: 'serif', fontSize: 48, fontWeight: FontWeight.w400),
+      headlineLarge: TextStyle(fontFamily: 'serif', fontSize: 40, fontWeight: FontWeight.w400),
+      headlineMedium: TextStyle(fontFamily: 'serif', fontSize: 34, fontWeight: FontWeight.w400, letterSpacing: 0.25),
+      headlineSmall: TextStyle(fontFamily: 'serif', fontSize: 24, fontWeight: FontWeight.w400),
+      titleLarge: TextStyle(fontFamily: 'serif', fontSize: 20, fontWeight: FontWeight.w500, letterSpacing: 0.15),
+      titleMedium: TextStyle(fontFamily: 'serif', fontSize: 16, fontWeight: FontWeight.w400, letterSpacing: 0.15),
+      titleSmall: TextStyle(fontFamily: 'serif', fontSize: 14, fontWeight: FontWeight.w500, letterSpacing: 0.1),
+      bodyLarge: TextStyle(fontFamily: 'sans-serif', fontSize: 16, fontWeight: FontWeight.w400, letterSpacing: 0.5),
+      bodyMedium: TextStyle(fontFamily: 'sans-serif', fontSize: 14, fontWeight: FontWeight.w400, letterSpacing: 0.25),
+      bodySmall: TextStyle(fontFamily: 'sans-serif', fontSize: 12, fontWeight: FontWeight.w400, letterSpacing: 0.4),
+      labelLarge: TextStyle(fontFamily: 'sans-serif', fontSize: 14, fontWeight: FontWeight.w500, letterSpacing: 1.25),
+      labelMedium: TextStyle(fontFamily: 'sans-serif', fontSize: 11, fontWeight: FontWeight.w400, letterSpacing: 1.5),
+      labelSmall: TextStyle(fontFamily: 'sans-serif', fontSize: 10, fontWeight: FontWeight.w400, letterSpacing: 1.5),
+    );
+
     return MaterialApp(
-      title: 'Gestión de Cocina',
+      title: 'kefa, cocina virtual',
+      // Habilitar Material Design 3
       theme: ThemeData(
-      useMaterial3: true,
-      primarySwatch: Colors.deepPurple,
-      colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      appBarTheme: AppBarTheme(
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
-        titleTextStyle: TextStyle(
-        fontFamily: 'Serif',
-        fontSize: 22,
-        fontWeight: FontWeight.bold,
-        ),
+        useMaterial3: true,
+        // Generar paleta de colores M3 basada en un color semilla (morado)
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        // Aplicar la tipografía personalizada
+        textTheme: myTextTheme,
+        // Puedes ajustar otros aspectos del tema aquí si es necesario
       ),
-      textTheme: TextTheme(
-        headlineLarge: TextStyle(
-        fontFamily: 'Serif',
-        fontSize: 32,
-        fontWeight: FontWeight.bold,
-        color: Colors.deepPurple,
-        ),
-        headlineMedium: TextStyle(
-        fontFamily: 'Serif',
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: Colors.deepPurple,
-        ),
-        bodyLarge: TextStyle(
-        fontFamily: 'SansSerif',
-        fontSize: 18,
-        color: Colors.black87,
-        ),
-        bodyMedium: TextStyle(
-        fontFamily: 'SansSerif',
-        fontSize: 14,
-        color: Colors.black87,
-        ),
-        labelLarge: TextStyle(
-        fontFamily: 'SansSerif',
-        fontSize: 16,
-        color: Colors.deepPurple,
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
-        textStyle: TextStyle(
-          fontFamily: 'SansSerif',
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
-        ),
-      ),
-      ),
+      // Opcional: Configurar un tema oscuro si lo deseas
       darkTheme: ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: Colors.deepPurple,
-        brightness: Brightness.dark,
+         useMaterial3: true,
+         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white, brightness: Brightness.dark),
+         textTheme: myTextTheme, // Usar la misma tipografía, se adapta a colores oscuros
       ),
-      appBarTheme: AppBarTheme(
-        backgroundColor: Colors.deepPurple[700],
-        foregroundColor: Colors.white,
-        titleTextStyle: TextStyle(
-        fontFamily: 'Serif',
-        fontSize: 22,
-        fontWeight: FontWeight.bold,
-        color: Colors.white,
-        ),
-      ),
-      textTheme: TextTheme(
-        headlineLarge: TextStyle(
-        fontFamily: 'Serif',
-        fontSize: 32,
-        fontWeight: FontWeight.bold,
-        color: Colors.deepPurple[200],
-        ),
-        headlineMedium: TextStyle(
-        fontFamily: 'Serif',
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: Colors.deepPurple[200],
-        ),
-        bodyLarge: TextStyle(
-        fontFamily: 'SansSerif',
-        fontSize: 18,
-        color: Colors.white,
-        ),
-        bodyMedium: TextStyle(
-        fontFamily: 'SansSerif',
-        fontSize: 14,
-        color: Colors.white70,
-        ),
-        labelLarge: TextStyle(
-        fontFamily: 'SansSerif',
-        fontSize: 16,
-        color: Colors.deepPurple[200],
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.deepPurple[700],
-        foregroundColor: Colors.white,
-        textStyle: TextStyle(
-          fontFamily: 'SansSerif',
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
-        ),
-      ),
-      ),
-      themeMode: ThemeMode.system,
-      home: HomeWithBottomNav(),
-    );
-  }
-}
+      // Opcional: Decidir cómo se aplica el tema (sistema, claro, oscuro)
+      themeMode: ThemeMode.system, // Seguir la configuración del sistema operativo
 
-// Widget principal que maneja el BottomNavigationBar
-class HomeWithBottomNav extends StatefulWidget {
-  const HomeWithBottomNav({super.key});
-
-  @override
-  _HomeWithBottomNavState createState() => _HomeWithBottomNavState();
-}
-
-class _HomeWithBottomNavState extends State<HomeWithBottomNav> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _pantallas = [
-    PantallaPrincipal(),
-    PlaceholderWidget('Gestión'),
-    PlaceholderWidget('Perfil'),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pantallas[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.home), label: 'Principal'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.settings), label: 'Gestión'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person), label: 'Perfil'),
-        ],
-      ),
-    );
-  }
-}
-
-// Pantalla principal con AppBar y 4 botones
-class PantallaPrincipal extends StatelessWidget {
-  const PantallaPrincipal({super.key});
-
-  void mostrarOpciones(BuildContext context, String titulo) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Opciones para $titulo'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(title: Text('Crear $titulo')),
-              ListTile(title: Text('Editar $titulo')),
-              ListTile(title: Text('Eliminar $titulo')),
-            ],
-          ),
-          actions: [
-            TextButton(
-              child: Text('Cerrar'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Restaurante Puchy 🍽️'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Center(
-          child: SizedBox(
-            width: 250,
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-          SizedBox(
-            width: 200,
-            height: 60,
-            child: ElevatedButton(
-              onPressed: () => mostrarOpciones(context, 'Cocineros'),
-              child: Text('Cocineros'),
-            ),
-          ),
-          SizedBox(height: 30),
-          SizedBox(
-            width: 200,
-            height: 60,
-            child: ElevatedButton(
-              onPressed: () => mostrarOpciones(context, 'Utensilios'),
-              child: Text('Utensilios'),
-            ),
-          ),
-          SizedBox(height: 30),
-          SizedBox(
-            width: 200,
-            height: 60,
-            child: ElevatedButton(
-              onPressed: () => mostrarOpciones(context, 'Cocinas'),
-              child: Text('Cocinas'),
-            ),
-          ),
-          SizedBox(height: 30),
-          SizedBox(
-            width: 200,
-            height: 60,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => PantallaRecetas()),
-                );
-              },
-              child: Text('Recetas'),
-            ),
-          ),
-              ],
-            ),
-          ),
-        )
-        ),
-    );
-  }
-}
-
-// Pantalla nueva para recetas
-class PantallaRecetas extends StatelessWidget {
-  const PantallaRecetas({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Recetas'),
-      ),
-      body: Center(
-        child: Text(
-          'Aquí van las recetas 🍲',
-          style: TextStyle(fontSize: 20),
-        ),
-      ),
-    );
-  }
-}
-
-// Pantallas vacías para "Gestión" y "Perfil"
-class PlaceholderWidget extends StatelessWidget {
-  final String texto;
-
-  const PlaceholderWidget(this.texto, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(texto),
-      ),
-      body: Center(
-        child: Text('Sección: $texto'),
-      ),
+      home: const HomePage(), // Establecer la pantalla principal
+      debugShowCheckedModeBanner: false, // Ocultar el banner de debug
     );
   }
 }
