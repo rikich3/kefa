@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'crear_ingrediente_page.dart';
+import 'trabajadores_page.dart';
 
 class ManageTab extends StatefulWidget {
   const ManageTab({super.key});
@@ -16,6 +18,8 @@ class _ManageTabState extends State<ManageTab> {
   void _onSectionTapped(String sectionName) {
     if (sectionName == 'Ingredientes') {
       _showIngredientesMenu(context);
+    } else if (sectionName == 'Trabajadores') {
+      _navigateToTrabajadoresPage(context);
     } else {
       print('Sección "$sectionName" seleccionada');
       // Aquí iría la lógica para navegar o abrir un modal
@@ -44,8 +48,12 @@ class _ManageTabState extends State<ManageTab> {
                     icon: const Icon(Icons.add),
                     label: const Text('Crear'),
                     onPressed: () {
-                      // Lógica para crear ingrediente
-                      Navigator.pop(context);
+                      // Navegar a la pantalla de crear ingrediente
+                      Navigator.pop(context); // Cierra el modal primero
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const CrearIngredientePage()),
+                      );
                     },
                   ),
                   ElevatedButton.icon(
@@ -70,6 +78,14 @@ class _ManageTabState extends State<ManageTab> {
           ),
         );
       },
+    );
+  }
+
+  // Método para navegar a la página de trabajadores
+  void _navigateToTrabajadoresPage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const TrabajadoresPage(esSuperusuario: true)),
     );
   }
 
@@ -158,7 +174,12 @@ class _ManageTabState extends State<ManageTab> {
                 child: _buildAssetSection(
                   icon: Icons.person, // Icono para trabajadores
                   text: 'Trabajadores',
-                  onTap: () => _onSectionTapped('Trabajadores'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const TrabajadoresPage(esSuperusuario: true)),
+                    );
+                  },
                 ),
               ),
               const SizedBox(width: 12), // Espacio entre secciones
