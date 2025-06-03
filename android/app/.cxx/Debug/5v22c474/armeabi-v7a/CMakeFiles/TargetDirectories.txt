@@ -1,0 +1,2 @@
+C:/Users/sarv/UNSA/semestre_05/5-IPS-B/proyecto/Nueva carpeta/kefa/android/app/.cxx/Debug/5v22c474/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/sarv/UNSA/semestre_05/5-IPS-B/proyecto/Nueva carpeta/kefa/android/app/.cxx/Debug/5v22c474/armeabi-v7a/CMakeFiles/rebuild_cache.dir
