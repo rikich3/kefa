@@ -14,8 +14,63 @@ class _ManageTabState extends State<ManageTab> {
 
   // Función dummy para el tap en Assets/Recetas (por ahora solo imprime)
   void _onSectionTapped(String sectionName) {
-    print('Sección "$sectionName" seleccionada');
-    // Aquí iría la lógica para navegar o abrir un modal
+    if (sectionName == 'Ingredientes') {
+      _showIngredientesMenu(context);
+    } else {
+      print('Sección "$sectionName" seleccionada');
+      // Aquí iría la lógica para navegar o abrir un modal
+    }
+  }
+
+  // Nuevo método para mostrar el menú de ingredientes
+  void _showIngredientesMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Ingredientes', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: const Text('Crear'),
+                    onPressed: () {
+                      // Lógica para crear ingrediente
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Editar'),
+                    onPressed: () {
+                      // Lógica para editar ingrediente
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.delete),
+                    label: const Text('Borrar'),
+                    onPressed: () {
+                      // Lógica para borrar ingrediente
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
