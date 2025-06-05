@@ -5,7 +5,7 @@ import '../../back/repositories/ingredientes_repository.dart'; // Usamos la inte
 class IngredientesProvider extends ChangeNotifier {
   final IngredientesRepository _ingredientesRepository; // Dependencia al Repository
 
-  List<Ingredientes> _ingredientes = []; // El estado que la UI observará
+  List<MapEntry<dynamic, Ingredientes>> _ingredientesEntries = []; // El estado que la UI observará
   bool _isLoading = false; // Estado de carga (opcional pero útil)
   String? _errorMessage; // Mensaje de error (opcional)
 
@@ -17,7 +17,8 @@ class IngredientesProvider extends ChangeNotifier {
   }
 
   // Getters para acceder al estado desde la UI
-  List<Ingredientes> get ingredientes => _ingredientes;
+  List<MapEntry<dynamic, Ingredientes>> get ingredientesEntries => _ingredientesEntries;
+  List<Ingredientes> get ingredients => _ingredientesEntries.map((e) => e.value).toList(); 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -28,7 +29,7 @@ class IngredientesProvider extends ChangeNotifier {
     notifyListeners(); // Notificar a los listeners que empezó la carga
 
     try {
-      _ingredientes = await _ingredientesRepository.getAllIngredientes();
+      _ingredientesEntries = await _ingredientesRepository.getAllIngredientes();
       // Si implementas Streams en el Repository, podrías suscribirte aquí:
       // _ingredientRepository.watchAllIngredients().listen((data) {
       //   _ingredients = data;

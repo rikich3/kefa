@@ -8,9 +8,9 @@ class HiveIngredientesDataSource {
       await Hive.openBox<Ingredientes>('ingredientes'); // Nombre de la caja
 
   // Obtener todos los ingredienteses
-  Future<List<Ingredientes>> getAllIngredientes() async {
+  Future<List<MapEntry<dynamic, Ingredientes>>> getAllIngredientes() async {
     final box = await _ingredientesBox;
-    return box.values.toList();
+    return box.toMap().entries.toList();
   }
 
   // Añadir un nuevo ingredientese

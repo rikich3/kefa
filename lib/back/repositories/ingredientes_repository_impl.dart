@@ -9,7 +9,7 @@ class IngredientesRepositoryImpl implements IngredientesRepository {
   IngredientesRepositoryImpl({required this.hiveDataSource});
 
   @override
-  Future<List<Ingredientes>> getAllIngredientes() {
+  Future<List<MapEntry<dynamic, Ingredientes>>> getAllIngredientes() {
     // Llama al método correspondiente en la fuente de datos Hive
     return hiveDataSource.getAllIngredientes();
   }

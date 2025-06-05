@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart'; // Importar google_fonts
-import 'home_page.dart'; // Importar la pantalla principal
-import 'package:hive/hive.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:hive_flutter/hive_flutter.dart'; // Importar Hive Flutter
+import 'package:provider/provider.dart'; // Importar Provider
+import 'package:path_provider/path_provider.dart'; // Importar path_provider para getApplicationDocumentsDirectory
+//import 'package:firebase_core/firebase_core.dart'; // Si ya configuraste Firebase
+import 'firebase_options.dart'; // Se generará
+// Importar los modelos y proveedores que necesitarás
+import 'back/dataModels/ingredientes.dart';
+import 'back/data_sources/hive/hive_ingredientes_data_source.dart';
+import 'back/repositories/ingredientes_repository_impl.dart';
+import 'front/state/ingredientes_provider.dart';
+import 'home_page.dart';
 
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
-  final appDocumentDirectory = await getApplicationDocumentsDirectory();
-  Hive.init(appDocumentDirectory.path);
+  //final appDocumentDirectory = await getApplicationDocumentsDirectory();
+  Hive.initFlutter();
+  Hive.registerAdapter(IngredientesAdapter());
   runApp(const MyApp());
 }
 
@@ -37,29 +46,38 @@ class MyApp extends StatelessWidget {
       labelMedium: TextStyle(fontFamily: 'sans-serif', fontSize: 11, fontWeight: FontWeight.w400, letterSpacing: 1.5),
       labelSmall: TextStyle(fontFamily: 'sans-serif', fontSize: 10, fontWeight: FontWeight.w400, letterSpacing: 1.5),
     );
+    final HiveIngredientesDataSource hiveIngredientesDataSource = HiveIngredientesDataSource();
+    final IngredientesRepositoryImpl ingredientesRepository = IngredientesRepositoryImpl(hiveDataSource: hiveIngredientesDataSource);
 
-    return MaterialApp(
-      title: 'kefa, cocina virtual',
-      // Habilitar Material Design 3
-      theme: ThemeData(
-        useMaterial3: true,
-        // Generar paleta de colores M3 basada en un color semilla (morado)
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        // Aplicar la tipografía personalizada
-        textTheme: myTextTheme,
-        // Puedes ajustar otros aspectos del tema aquí si es necesario
+    return 
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) =>
+          IngredientesProvider(ingredientRepository: ingredientesRepository))
+      ],
+      child: MaterialApp(
+        title: 'kefa, cocina virtual',
+        // Habilitar Material Design 3
+        theme: ThemeData(
+          useMaterial3: true,
+          // Generar paleta de colores M3 basada en un color semilla (morado)
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+          // Aplicar la tipografía personalizada
+          textTheme: myTextTheme,
+          // Puedes ajustar otros aspectos del tema aquí si es necesario
+        ),
+        // Opcional: Configurar un tema oscuro si lo deseas
+        darkTheme: ThemeData(
+           useMaterial3: true,
+           colorScheme: ColorScheme.fromSeed(seedColor: Colors.white, brightness: Brightness.dark),
+           textTheme: myTextTheme, // Usar la misma tipografía, se adapta a colores oscuros
+        ),
+        // Opcional: Decidir cómo se aplica el tema (sistema, claro, oscuro)
+        themeMode: ThemeMode.system, // Seguir la configuración del sistema operativo
+      
+        home: const HomePage(), // Establecer la pantalla principal
+        debugShowCheckedModeBanner: false, // Ocultar el banner de debug
       ),
-      // Opcional: Configurar un tema oscuro si lo deseas
-      darkTheme: ThemeData(
-         useMaterial3: true,
-         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white, brightness: Brightness.dark),
-         textTheme: myTextTheme, // Usar la misma tipografía, se adapta a colores oscuros
-      ),
-      // Opcional: Decidir cómo se aplica el tema (sistema, claro, oscuro)
-      themeMode: ThemeMode.system, // Seguir la configuración del sistema operativo
-
-      home: const HomePage(), // Establecer la pantalla principal
-      debugShowCheckedModeBanner: false, // Ocultar el banner de debug
     );
   }
 }
