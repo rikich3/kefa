@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 part 'ingredientes.g.dart';
 
 @HiveType(typeId: 1)
-class ingredientes{
+class Ingredientes{
   @HiveField(0)
   final String name;
   @HiveField(1)
@@ -14,7 +14,7 @@ class ingredientes{
   final int cantidad;
   @HiveField(4)
   final double precio;
-  ingredientes({
+  Ingredientes({
     required this.name,
     required this.descripcion,
     required this.unidadMedida,

@@ -6,17 +6,17 @@ part of 'ingredientes.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
-class ingredientesAdapter extends TypeAdapter<ingredientes> {
+class IngredientesAdapter extends TypeAdapter<Ingredientes> {
   @override
   final int typeId = 1;
 
   @override
-  ingredientes read(BinaryReader reader) {
+  Ingredientes read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return ingredientes(
+    return Ingredientes(
       name: fields[0] as String,
       descripcion: fields[1] as String,
       unidadMedida: fields[2] as String,
@@ -26,7 +26,7 @@ class ingredientesAdapter extends TypeAdapter<ingredientes> {
   }
 
   @override
-  void write(BinaryWriter writer, ingredientes obj) {
+  void write(BinaryWriter writer, Ingredientes obj) {
     writer
       ..writeByte(5)
       ..writeByte(0)
@@ -47,7 +47,7 @@ class ingredientesAdapter extends TypeAdapter<ingredientes> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ingredientesAdapter &&
+      other is IngredientesAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
