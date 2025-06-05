@@ -93,7 +93,7 @@ class _ManageTabState extends State<ManageTab> {
   Widget build(BuildContext context) {
     final TextTheme textTheme = Theme.of(context).textTheme;
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
+    
     return Padding(
       padding: const EdgeInsets.all(16.0), // Padding general para el contenido de la pestaña
       child: ListView( // Usamos ListView para que el contenido pueda scroll si es necesario
