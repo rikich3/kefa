@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart'; // Importar google_fonts
+//import 'package:google_fonts/google_fonts.dart'; // Importar google_fonts
 import 'home_page.dart'; // Importar la pantalla principal
 
 void main() {
