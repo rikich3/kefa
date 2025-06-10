@@ -14,7 +14,6 @@ class _CrearIngredientePageState extends State<CrearIngredientePage> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Crear Ingrediente'),
@@ -59,6 +58,7 @@ class _CrearIngredientePageState extends State<CrearIngredientePage> {
                       if (_formKey.currentState?.validate() ?? false) {
                         _formKey.currentState?.save();
                         // Aquí puedes guardar el ingrediente
+                        print('Ingrediente: $_nombre, Cantidad: $_cantidad');
                         Navigator.pop(context);
                       }
                     },
