@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'crear_ingrediente_page.dart';
 import 'trabajadores_page.dart';
+import 'utensillios_page.dart'; // Importa la página de utensilios
 
+// Cambia a StatefulWidget para aceptar el callback
 class ManageTab extends StatefulWidget {
   const ManageTab({super.key});
 
@@ -20,6 +22,8 @@ class _ManageTabState extends State<ManageTab> {
       _showIngredientesMenu(context);
     } else if (sectionName == 'Trabajadores') {
       _navigateToTrabajadoresPage(context);
+    } else if (sectionName == 'Utensilios') {
+      _showUtensiliosDialog(context);
     } else {
       print('Sección "$sectionName" seleccionada');
       // Aquí iría la lógica para navegar o abrir un modal
@@ -89,10 +93,31 @@ class _ManageTabState extends State<ManageTab> {
     );
   }
 
+  // Nuevo método para mostrar el diálogo de utensilios
+  void _showUtensiliosDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Utensilios'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: UtensiliosPage(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final TextTheme textTheme = Theme.of(context).textTheme;
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
       padding: const EdgeInsets.all(16.0), // Padding general para el contenido de la pestaña
