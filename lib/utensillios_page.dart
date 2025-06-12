@@ -19,7 +19,7 @@ class Utensilio {
 }
 
 class UtensiliosPage extends StatefulWidget {
-  const UtensiliosPage({Key? key}) : super(key: key);
+  const UtensiliosPage({super.key});
 
   @override
   State<UtensiliosPage> createState() => _UtensiliosPageState();
