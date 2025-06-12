@@ -260,7 +260,7 @@ class _ManageTabState extends State<ManageTab> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 8.0), // Padding interno
         decoration: BoxDecoration(
-          color: colorScheme.surfaceVariant.withOpacity(0.2), // Un color de fondo suave de M3
+          color: colorScheme.surfaceContainerHighest.withOpacity(0.2), // Un color de fondo suave de M3
           borderRadius: BorderRadius.circular(12.0), // Bordes redondeados del contenedor
           // Opcional: añadir un borde sutil
           // border: Border.all(color: colorScheme.outline),
