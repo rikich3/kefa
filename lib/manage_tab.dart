@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'forms/crear_ingrediente_page.dart';
 import 'forms/trabajadores_page.dart';
-import 'forms/utensillios_page.dart'; // Importa la página de utensilios
+import 'forms/utensillios_page.dart';
+import 'recetas/administrar_recetas_page.dart'; // Importa la página de administrar recetas
 
 // Cambia a StatefulWidget para aceptar el callback
 class ManageTab extends StatefulWidget {
@@ -24,6 +25,11 @@ class _ManageTabState extends State<ManageTab> {
       _navigateToTrabajadoresPage(context);
     } else if (sectionName == 'Utensilios') {
       _showUtensiliosDialog(context);
+    } else if (sectionName == 'Recetas') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AdministrarRecetasPage()),
+      );
     } else {
       print('Sección "$sectionName" seleccionada');
       // Aquí iría la lógica para navegar o abrir un modal
