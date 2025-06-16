@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'recetas/recetas_list_page.dart';
 
-class SocialTabPlaceholder extends StatelessWidget {
-  const SocialTabPlaceholder({super.key});
+class SocialTab extends StatelessWidget {
+  const SocialTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Contenido de la pestaña Social (Próximamente)'),
-    );
+    return RecetasListPage();
   }
 }
