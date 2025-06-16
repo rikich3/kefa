@@ -21,6 +21,13 @@ lib/
   back/
     ... (servicios, modelos, lógica de negocio)
   recetas/
-    ... (pantallas y widgets de recetas)
+    recetas_list_page.dart
+    receta_detalle_page.dart
+    receta_form_page.dart
+    compartir_receta_dialog.dart
+    receta_model.dart
   historial/
-    ... (pantallas y lógica de historial)
+    historial_preferencias_page.dart
+    historial_acciones_page.dart
+    historial_model.dart
+    metricas_eficiencia_page.dart
