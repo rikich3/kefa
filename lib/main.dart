@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart'; // Importar Hive Flutter
+import 'package:kefa/back/repositories/workers_repository_impl.dart';
 import 'package:provider/provider.dart'; // Importar Provider
 import 'package:path_provider/path_provider.dart'; // Importar path_provider para getApplicationDocumentsDirectory
 //import 'package:firebase_core/firebase_core.dart'; // Si ya configuraste Firebase
@@ -10,6 +11,15 @@ import 'back/dataModels/ingredientes.dart';
 import 'back/data_sources/hive/hive_ingredientes_data_source.dart';
 import 'back/repositories/ingredientes_repository_impl.dart';
 import 'front/state/ingredientes_provider.dart';
+import 'back/data_sources/hive/hive_instrumentos_data_source.dart';
+import 'back/dataModels/instrumentos.dart';
+import 'back/repositories/ingredientes_repository_impl.dart';
+import 'front/state/instrumentos_provider.dart';
+import 'back/dataModels/worker.dart';
+import 'back/data_sources/hive/hive_worker_data_source.dart';
+import 'back/repositories/instrumentos_repository.impl.dart';
+import 'front/state/workers_provider.dart';
+
 import 'home_page.dart';
 
 
@@ -48,20 +58,29 @@ class MyApp extends StatelessWidget {
     );
     final HiveIngredientesDataSource hiveIngredientesDataSource = HiveIngredientesDataSource();
     final IngredientesRepositoryImpl ingredientesRepository = IngredientesRepositoryImpl(hiveDataSource: hiveIngredientesDataSource);
+    final HiveInstrumentosDataSource hiveInstrumentosDataSource = HiveInstrumentosDataSource();
+    final InstrumentosRepositoryImpl instrumentosRepository = InstrumentosRepositoryImpl(hiveDataSource: hiveInstrumentosDataSource);
+    final HiveWorkerDataSource hiveWorkersDataSource = HiveWorkerDataSource();
+    final WorkersRepositoryImpl workerRepository = WorkersRepositoryImpl(hiveDataSource: hiveWorkersDataSource);
 
     return 
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) =>
-          IngredientesProvider(ingredientRepository: ingredientesRepository))
-      ],
+          IngredientesProvider(ingredientRepository: ingredientesRepository)),
+        ChangeNotifierProvider(create: (_) =>
+          InstrumentosProvider(instrumentosRepository: instrumentosRepository)),
+        ChangeNotifierProvider(create: (_) =>
+          WorkersProvider(workerRepository: workerRepository))
+        ],
       child: MaterialApp(
         title: 'kefa, cocina virtual',
         // Habilitar Material Design 3
         theme: ThemeData(
           useMaterial3: true,
-          // Generar paleta de colores M3 basada en un color semilla (morado)
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+            colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF6699CC), // A desaturated blue
+            ),
           // Aplicar la tipografía personalizada
           textTheme: myTextTheme,
           // Puedes ajustar otros aspectos del tema aquí si es necesario
@@ -69,7 +88,7 @@ class MyApp extends StatelessWidget {
         // Opcional: Configurar un tema oscuro si lo deseas
         darkTheme: ThemeData(
            useMaterial3: true,
-           colorScheme: ColorScheme.fromSeed(seedColor: Colors.white, brightness: Brightness.dark),
+           colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6699CC), brightness: Brightness.dark),
            textTheme: myTextTheme, // Usar la misma tipografía, se adapta a colores oscuros
         ),
         // Opcional: Decidir cómo se aplica el tema (sistema, claro, oscuro)

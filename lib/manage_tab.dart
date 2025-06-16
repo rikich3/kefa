@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // <-- Importar Provider
 import 'front/state/ingredientes_provider.dart'; // <-- Importar tu Provider
 import 'back/dataModels/ingredientes.dart'; // <-- Importar el modelo Ingrediente (necesario para la lista)
+import 'front/state/workers_provider.dart'; // <-- Importar tu Provider
+import 'back/dataModels/worker.dart'; // <-- Importar el modelo Ingrediente (necesario para la lista)
+import 'front/state/instrumentos_provider.dart'; // <-- Importar tu Provider
+import 'back/dataModels/instrumentos.dart'; // <-- Importar el modelo Ingrediente (necesario para la lista)
 
 // Importar las pantallas de destino
 import 'crear_ingrediente_page.dart';
+import 'front/ui/crear_worker_page.dart';
+import 'front/ui/crear_instrumento_page.dart';
 import 'trabajadores_page.dart';
 // import 'editar_ingrediente_page.dart'; // Necesitarás una pantalla/modal de edición
 
@@ -22,14 +28,21 @@ class _ManageTabState extends State<ManageTab> {
 
   // Función para manejar taps en las secciones de Assets/Recetas
   void _onSectionTapped(String sectionName) {
-    if (sectionName == 'Ingredientes') {
-      _showIngredientesMenu(context); // Mostrar modal para ingredientes
-    } else if (sectionName == 'Trabajadores') {
-      // Ya está en el onTap del _buildAssetSection, pero lo mantenemos aquí por si cambia
-      // _navigateToTrabajadoresPage(context);
-    } else {
-      print('Sección "$sectionName" seleccionada');
-      // Aquí iría la lógica para navegar o abrir un modal para Utensilios, Recetas, etc.
+    switch (sectionName) {
+      case 'Ingredientes':
+      _showIngredientesMenu(context);
+      break;
+      case 'Workers':
+      _showWorkersMenu(context);
+      break;
+      case 'Utensilios':
+      _showInstrumentosMenu(context);
+      break;
+      case 'Recetas':
+      break;
+      default:
+      // Puedes manejar otros casos aquí si es necesario
+      break;
     }
   }
 
@@ -191,6 +204,195 @@ class _ManageTabState extends State<ManageTab> {
      );
    }
 
+    void _showWorkersMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext ctx) {
+        final textTheme = Theme.of(ctx).textTheme;
+        final colorScheme = Theme.of(ctx).colorScheme;
+
+        return Container(
+          height: MediaQuery.of(ctx).size.height * 0.7,
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Administrar Trabajadores', style: textTheme.titleLarge),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Crear Nuevo Trabajador'),
+                onPressed: () {
+                  // Cierra el modal usando el contexto del modal (ctx)
+                  Navigator.pop(ctx);
+                  // Navega a la pantalla de creación usando el contexto del modal (ctx)
+                  // O podrías usar el contexto original del widget si necesitas
+                  // mantener el estado de la pestaña, pero ctx es más seguro aquí.
+                  Navigator.push(
+                    ctx, // Usa el contexto del modal para la navegación
+                    MaterialPageRoute(builder: (context) => const CrearWorkerPage()),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+              Text('Lista de Trabajadores', style: textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Expanded(
+                child: Consumer<WorkersProvider>(
+                  builder: (context, workersProvider, child) {
+                    if (workersProvider.isLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (workersProvider.errorMessage != null) {
+                      return Center(
+                        child: Text(
+                          workersProvider.errorMessage!,
+                          style: textTheme.bodyMedium?.copyWith(color: colorScheme.error),
+                          textAlign: TextAlign.center,
+                        ),
+                      );
+                    }
+                    final workerEntries = workersProvider.workerEntries;
+                    if (workerEntries.isEmpty) {
+                      return const Center(child: Text('No hay trabajadores guardados aún.'));
+                    }
+                    return ListView.builder(
+                      itemCount: workerEntries.length,
+                      itemBuilder: (context, index) {
+                        final entry = workerEntries[index];
+                        final key = entry.key;
+                        final worker = entry.value;
+                        return ListTile(
+                          title: Text(worker.nombre),
+                          subtitle: Text(worker.funcion),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                tooltip: 'Editar',
+                                onPressed: () {
+                                  // TODO: Implementar edición
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete),
+                                tooltip: 'Eliminar',
+                                onPressed: () {
+                                  workersProvider.deleteWorker(key);
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Método para mostrar el modal de instrumentos
+  void _showInstrumentosMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext ctx) {
+        final textTheme = Theme.of(ctx).textTheme;
+        final colorScheme = Theme.of(ctx).colorScheme;
+
+        return Container(
+          height: MediaQuery.of(ctx).size.height * 0.7,
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Administrar Instrumentos', style: textTheme.titleLarge),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Crear Nuevo Instrumento'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.pushNamed(ctx, '/crearInstrumento');
+                },
+              ),
+              const SizedBox(height: 20),
+              Text('Lista de Instrumentos', style: textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Expanded(
+                child: Consumer<InstrumentosProvider>(
+                  builder: (context, instrumentosProvider, child) {
+                    if (instrumentosProvider.isLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (instrumentosProvider.errorMessage != null) {
+                      return Center(
+                        child: Text(
+                          instrumentosProvider.errorMessage!,
+                          style: textTheme.bodyMedium?.copyWith(color: colorScheme.error),
+                          textAlign: TextAlign.center,
+                        ),
+                      );
+                    }
+                    final instrumentosEntries = instrumentosProvider.instrumentosEntries;
+                    if (instrumentosEntries.isEmpty) {
+                      return const Center(child: Text('No hay instrumentos guardados aún.'));
+                    }
+                    return ListView.builder(
+                      itemCount: instrumentosEntries.length,
+                      itemBuilder: (context, index) {
+                        final entry = instrumentosEntries[index];
+                        final key = entry.key;
+                        final instrumento = entry.value;
+                        return ListTile(
+                          title: Text(instrumento.nombre),
+                          subtitle: Text('Cantidad: ${instrumento.cantidad}'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                tooltip: 'Editar',
+                                onPressed: () {
+                                  // TODO: Implementar edición
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete),
+                                tooltip: 'Eliminar',
+                                onPressed: () {
+                                  instrumentosProvider.deleteInstrumento(key);
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -270,9 +472,7 @@ class _ManageTabState extends State<ManageTab> {
                 child: _buildAssetSection(
                   icon: Icons.person,
                   text: 'Trabajadores',
-                  onTap: () {
-                    _navigateToTrabajadoresPage(context); // Llama a la navegación directa
-                  },
+                  onTap: () => _onSectionTapped('Workers')
                 ),
               ),
               const SizedBox(width: 12),
