@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'forms/crear_ingrediente_page.dart';
-import 'forms/trabajadores_page.dart';
-import 'forms/utensillios_page.dart';
-import 'recetas/administrar_recetas_page.dart'; // Importa la página de administrar recetas
+import 'forms/ingredientes_menu.dart';
+import 'forms/trabajadores_menu.dart';
+import 'forms/utensilios_menu.dart';
+import 'recetas/administrar_recetas_page.dart';
 
-// Cambia a StatefulWidget para aceptar el callback
 class ManageTab extends StatefulWidget {
   const ManageTab({super.key});
 
@@ -13,18 +12,37 @@ class ManageTab extends StatefulWidget {
 }
 
 class _ManageTabState extends State<ManageTab> {
-  // Estado para el Dropdown
   String _selectedKitchen = 'Principal';
   final List<String> _kitchens = ['Principal', 'Cocina 2', 'Cocina 3', 'Cocina 4'];
 
-  // Función dummy para el tap en Assets/Recetas (por ahora solo imprime)
   void _onSectionTapped(String sectionName) {
     if (sectionName == 'Ingredientes') {
-      _showIngredientesMenu(context);
+      showModalBottomSheet(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        isScrollControlled: true,
+        builder: (ctx) => const IngredientesMenu(),
+      );
     } else if (sectionName == 'Trabajadores') {
-      _navigateToTrabajadoresPage(context);
+      showModalBottomSheet(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        isScrollControlled: true,
+        builder: (ctx) => const TrabajadoresMenu(),
+      );
     } else if (sectionName == 'Utensilios') {
-      _showUtensiliosDialog(context);
+      showModalBottomSheet(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        isScrollControlled: true,
+        builder: (ctx) => const UtensiliosMenu(),
+      );
     } else if (sectionName == 'Recetas') {
       Navigator.push(
         context,
@@ -32,114 +50,22 @@ class _ManageTabState extends State<ManageTab> {
       );
     } else {
       print('Sección "$sectionName" seleccionada');
-      // Aquí iría la lógica para navegar o abrir un modal
     }
-  }
-
-  // Nuevo método para mostrar el menú de ingredientes
-  void _showIngredientesMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext ctx) {
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Ingredientes', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.add),
-                    label: const Text('Crear'),
-                    onPressed: () {
-                      // Navegar a la pantalla de crear ingrediente
-                      Navigator.pop(context); // Cierra el modal primero
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const CrearIngredientePage()),
-                      );
-                    },
-                  ),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.edit),
-                    label: const Text('Editar'),
-                    onPressed: () {
-                      // Lógica para editar ingrediente
-                      Navigator.pop(context);
-                    },
-                  ),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.delete),
-                    label: const Text('Borrar'),
-                    onPressed: () {
-                      // Lógica para borrar ingrediente
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // Método para navegar a la página de trabajadores
-  void _navigateToTrabajadoresPage(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const TrabajadoresPage(esSuperusuario: true)),
-    );
-  }
-
-  // Nuevo método para mostrar el diálogo de utensilios
-  void _showUtensiliosDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Utensilios'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: UtensiliosPage(),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cerrar'),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final TextTheme textTheme = Theme.of(context).textTheme;
-
     return Padding(
-      padding: const EdgeInsets.all(16.0), // Padding general para el contenido de la pestaña
-      child: ListView( // Usamos ListView para que el contenido pueda scroll si es necesario
+      padding: const EdgeInsets.all(16.0),
+      child: ListView(
         children: <Widget>[
-          // --- Sección Elegir Cocina ---
-          Text(
-            'Elegir Cocina:',
-            style: textTheme.titleMedium, // Estilo para un título de sección pequeño
-          ),
+          Text('Elegir Cocina:', style: textTheme.titleMedium),
           const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween, // Espacio entre elementos
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Dropdown para elegir cocina
-              Expanded( // Permite que el Dropdown ocupe el espacio disponible
+              Expanded(
                 child: DropdownButtonFormField<String>(
                   value: _selectedKitchen,
                   items: _kitchens.map((String kitchen) {
@@ -153,105 +79,75 @@ class _ManageTabState extends State<ManageTab> {
                       setState(() {
                         _selectedKitchen = newValue;
                       });
-                      print('Cocina seleccionada: $_selectedKitchen');
-                      // Aquí podrías cargar los datos de la nueva cocina
                     }
                   },
                   decoration: InputDecoration(
-                    // Estilo M3 para el Dropdown
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12.0), // Bordes redondeados M3
+                      borderRadius: BorderRadius.circular(12.0),
                     ),
-                    // filled: true, // Opcional: si quieres un fondo relleno
-                    // fillColor: colorScheme.surfaceVariant.withOpacity(0.2), // Opcional: color de fondo
                   ),
                 ),
               ),
-              const SizedBox(width: 12), // Espacio entre dropdown y botón
-              // Botón de icono para editar cocina (sin funcionalidad por ahora)
-              IconButton.filled( // Opcional: IconButton.filled para un look M3 con fondo
-                onPressed: () {
-                  print('Botón Editar Cocina presionado');
-                  // Funcionalidad de edición de cocina aquí
-                },
+              const SizedBox(width: 12),
+              IconButton.filled(
+                onPressed: () {},
                 icon: const Icon(Icons.edit),
                 tooltip: 'Editar Cocina Actual',
               ),
             ],
           ),
-          const SizedBox(height: 30), // Espacio grande entre secciones
-
-          // --- Sección Administrar Assets ---
-          Text(
-            'Administrar Assets',
-            style: textTheme.titleLarge, // Estilo para un título de sección principal (serif)
-          ),
+          const SizedBox(height: 30),
+          Text('Administrar Assets', style: textTheme.titleLarge),
           const SizedBox(height: 16),
-          Row( // Fila para las 3 secciones seleccionables
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Espacio equitativo
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // Sección Ingredientes
               Expanded(
                 child: _buildAssetSection(
-                  icon: Icons.restaurant_menu, // Icono para ingredientes
+                  icon: Icons.restaurant_menu,
                   text: 'Ingredientes',
                   onTap: () => _onSectionTapped('Ingredientes'),
                 ),
               ),
-              const SizedBox(width: 12), // Espacio entre secciones
-              // Sección Trabajadores
+              const SizedBox(width: 12),
               Expanded(
                 child: _buildAssetSection(
-                  icon: Icons.person, // Icono para trabajadores
+                  icon: Icons.person,
                   text: 'Trabajadores',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const TrabajadoresPage(esSuperusuario: true)),
-                    );
-                  },
+                  onTap: () => _onSectionTapped('Trabajadores'),
                 ),
               ),
-              const SizedBox(width: 12), // Espacio entre secciones
-              // Sección Utensilios
+              const SizedBox(width: 12),
               Expanded(
                 child: _buildAssetSection(
-                  icon: Icons.kitchen, // Icono para utensilios (o Icons.cutlery)
+                  icon: Icons.kitchen,
                   text: 'Utensilios',
                   onTap: () => _onSectionTapped('Utensilios'),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 30), // Espacio grande entre secciones
-
-          // --- Sección Administrar Recetas ---
-           Text(
-            'Administrar Recetas',
-            style: textTheme.titleLarge, // Estilo para un título de sección principal (serif)
-          ),
+          const SizedBox(height: 30),
+          Text('Administrar Recetas', style: textTheme.titleLarge),
           const SizedBox(height: 16),
-          Row( // Fila para la sección seleccionable (solo una)
+          Row(
             children: [
               Expanded(
-                 child: _buildAssetSection( // Reutilizamos la misma estructura de widget
-                  icon: Icons.menu_book, // Icono para recetas/libro
+                child: _buildAssetSection(
+                  icon: Icons.menu_book,
                   text: 'Recetas',
                   onTap: () => _onSectionTapped('Recetas'),
                 ),
               ),
-              // No hay más elementos en esta fila, el Expanded ocupará el espacio restante
             ],
           ),
-          // Puedes añadir más SizedBox al final si necesitas espacio extra para el scroll
           const SizedBox(height: 50),
         ],
       ),
     );
   }
 
-  // Widget auxiliar para construir las secciones seleccionables de Assets/Recetas
   Widget _buildAssetSection({
     required IconData icon,
     required String text,
@@ -259,33 +155,26 @@ class _ManageTabState extends State<ManageTab> {
   }) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final TextTheme textTheme = Theme.of(context).textTheme;
-
-    return InkWell( // Hace que la sección sea clicable y muestre feedback visual (splash)
+    return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12.0), // Bordes redondeados para el feedback visual
+      borderRadius: BorderRadius.circular(12.0),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 8.0), // Padding interno
+        padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 8.0),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest.withOpacity(0.2), // Un color de fondo suave de M3
-          borderRadius: BorderRadius.circular(12.0), // Bordes redondeados del contenedor
-          // Opcional: añadir un borde sutil
-          // border: Border.all(color: colorScheme.outline),
+          color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(12.0),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min, // Ajustar al contenido
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 40,
-              color: colorScheme.primary, // Color primario de M3 para los iconos
-            ),
-            const SizedBox(height: 8), // Espacio entre icono y texto
+            Icon(icon, size: 40, color: colorScheme.primary),
+            const SizedBox(height: 8),
             Text(
               text,
               textAlign: TextAlign.center,
-              style: textTheme.labelMedium?.copyWith(color: colorScheme.onSurfaceVariant), // Estilo de texto pequeño (sans-serif)
-              maxLines: 2, // Permitir 2 líneas si el texto es largo
-              overflow: TextOverflow.ellipsis, // Añadir puntos suspensivos si el texto es demasiado largo
+              style: textTheme.labelMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
