@@ -17,7 +17,7 @@ class _HomePageState extends State<HomePage> {
   static const List<Widget> _widgetOptions = <Widget>[
     ManageTab(), // Contenido de la pestaña Administrar
     WorkTabPlaceholder(), // Contenido de la pestaña Realizar (Placeholder)
-    SocialTabPlaceholder(), // Contenido de la pestaña Social (Placeholder)
+    SocialTab(), // Usar el widget SocialTab real
   ];
 
   // Función que se llama cuando se toca un ítem del BottomNavBar
