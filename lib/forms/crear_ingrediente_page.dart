@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class CrearIngredientePage extends StatefulWidget {
   const CrearIngredientePage({super.key});
@@ -11,6 +12,11 @@ class _CrearIngredientePageState extends State<CrearIngredientePage> {
   final _formKey = GlobalKey<FormState>();
   String _nombre = '';
   String _cantidad = '';
+  String _unidad = 'g';
+
+  final List<String> _unidades = [
+    'g', 'kg', 'ml', 'l', 'unidades', 'cucharadas', 'tazas'
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -39,13 +45,37 @@ class _CrearIngredientePageState extends State<CrearIngredientePage> {
                 validator: (value) => (value == null || value.isEmpty) ? 'Ingrese un nombre' : null,
               ),
               const SizedBox(height: 20),
-              TextFormField(
-                decoration: const InputDecoration(
-                  labelText: 'Cantidad',
-                  border: OutlineInputBorder(),
-                ),
-                onSaved: (value) => _cantidad = value ?? '',
-                validator: (value) => (value == null || value.isEmpty) ? 'Ingrese una cantidad' : null,
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: TextFormField(
+                      decoration: const InputDecoration(
+                        labelText: 'Cantidad',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^[0-9]+([.,][0-9]*)?'))],
+                      onSaved: (value) => _cantidad = value ?? '',
+                      validator: (value) => (value == null || value.isEmpty) ? 'Ingrese una cantidad' : null,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: DropdownButtonFormField<String>(
+                      value: _unidad,
+                      items: _unidades.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                      onChanged: (value) {
+                        if (value != null) setState(() => _unidad = value);
+                      },
+                      decoration: const InputDecoration(
+                        labelText: 'Unidad',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 30),
               Row(
@@ -57,8 +87,7 @@ class _CrearIngredientePageState extends State<CrearIngredientePage> {
                     onPressed: () {
                       if (_formKey.currentState?.validate() ?? false) {
                         _formKey.currentState?.save();
-                        // Aquí puedes guardar el ingrediente
-                        print('Ingrediente: $_nombre, Cantidad: $_cantidad');
+                        print('Ingrediente: $_nombre, Cantidad: $_cantidad $_unidad');
                         Navigator.pop(context);
                       }
                     },
