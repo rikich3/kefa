@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'crear_ingrediente_page.dart';
-import 'trabajadores_page.dart';
-import 'utensillios_page.dart'; // Importa la página de utensilios
+import 'forms/crear_ingrediente_page.dart';
+import 'forms/trabajadores_page.dart';
+import 'forms/utensillios_page.dart'; // Importa la página de utensilios
 
 // Cambia a StatefulWidget para aceptar el callback
 class ManageTab extends StatefulWidget {
