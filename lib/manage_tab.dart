@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'features/ingredientes/ingredientes_menu.dart';
 import 'features/trabajadores/trabajadores_menu.dart';
 import 'features/utensilios/utensilios_menu.dart';
-import 'features/recetas/administrar_recetas_page.dart';
+import 'features/recetas/administrar_recetas_menu.dart';
 
 class ManageTab extends StatefulWidget {
   const ManageTab({super.key});
@@ -44,9 +44,13 @@ class _ManageTabState extends State<ManageTab> {
         builder: (ctx) => const UtensiliosMenu(),
       );
     } else if (sectionName == 'Recetas') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const AdministrarRecetasPage()),
+      showModalBottomSheet(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        isScrollControlled: true,
+        builder: (ctx) => const AdministrarRecetasMenu(),
       );
     } else {
       print('Sección "$sectionName" seleccionada');
