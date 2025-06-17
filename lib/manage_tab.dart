@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'forms/ingredientes_menu.dart';
-import 'forms/trabajadores_menu.dart';
-import 'forms/utensilios_menu.dart';
-import 'recetas/administrar_recetas_page.dart';
+import 'features/ingredientes/ingredientes_menu.dart';
+import 'features/trabajadores/trabajadores_menu.dart';
+import 'features/utensilios/utensilios_menu.dart';
+import 'features/recetas/administrar_recetas_page.dart';
 
 class ManageTab extends StatefulWidget {
   const ManageTab({super.key});

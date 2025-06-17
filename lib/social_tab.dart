@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'recetas/recetas_list_page.dart';
+import 'features/recetas/recetas_list_page.dart';
 
 class SocialTab extends StatelessWidget {
   const SocialTab({super.key});
