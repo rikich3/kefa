@@ -16,7 +16,7 @@ class Estacion {
 }
 
 class PanelEstacionesPage extends StatelessWidget {
-  PanelEstacionesPage({Key? key}) : super(key: key);
+  PanelEstacionesPage({super.key});
 
   final List<Estacion> estaciones = [
     Estacion(

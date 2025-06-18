@@ -3,7 +3,7 @@ import 'receta_model.dart';
 import 'receta_detalle_page.dart';
 
 class RecetasListPage extends StatelessWidget {
-  RecetasListPage({Key? key}) : super(key: key);
+  RecetasListPage({super.key});
 
   final List<Receta> recetasCompartidas = [
     Receta(

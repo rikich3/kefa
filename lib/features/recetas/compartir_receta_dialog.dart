@@ -4,7 +4,7 @@ import 'receta_model.dart';
 
 class CompartirRecetaDialog extends StatelessWidget {
   final Receta receta;
-  const CompartirRecetaDialog({Key? key, required this.receta}) : super(key: key);
+  const CompartirRecetaDialog({super.key, required this.receta});
 
   @override
   Widget build(BuildContext context) {
@@ -52,10 +52,6 @@ class CompartirRecetaDialog extends StatelessWidget {
   }
 
   String _recetaComoTexto(Receta receta) {
-    return 'Receta: ${receta.nombre}\n\nDescripción: ${receta.descripcion}\n\nIngredientes:\n- ' +
-        receta.ingredientes.join('\n- ') +
-        '\n\nPasos:\n- ' +
-        receta.pasos.join('\n- ') +
-        '\n\nAutor: ${receta.autor}';
+    return 'Receta: ${receta.nombre}\n\nDescripción: ${receta.descripcion}\n\nIngredientes:\n- ${receta.ingredientes.join('\n- ')}\n\nPasos:\n- ${receta.pasos.join('\n- ')}\n\nAutor: ${receta.autor}';
   }
 }

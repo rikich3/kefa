@@ -5,7 +5,7 @@ import 'compartir_receta_dialog.dart';
 import 'realizar_receta_page.dart';
 
 class AdministrarRecetasPage extends StatefulWidget {
-  const AdministrarRecetasPage({Key? key}) : super(key: key);
+  const AdministrarRecetasPage({super.key});
 
   @override
   State<AdministrarRecetasPage> createState() => _AdministrarRecetasPageState();

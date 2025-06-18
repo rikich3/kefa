@@ -3,7 +3,7 @@ import 'trabajador_model.dart';
 import 'dart:async';
 
 class TrabajadoresMenu extends StatefulWidget {
-  const TrabajadoresMenu({Key? key}) : super(key: key);
+  const TrabajadoresMenu({super.key});
 
   @override
   State<TrabajadoresMenu> createState() => _TrabajadoresMenuState();

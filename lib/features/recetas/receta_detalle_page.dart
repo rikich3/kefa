@@ -5,7 +5,7 @@ import 'realizar_receta_page.dart';
 
 class RecetaDetallePage extends StatelessWidget {
   final Receta receta;
-  const RecetaDetallePage({Key? key, required this.receta}) : super(key: key);
+  const RecetaDetallePage({super.key, required this.receta});
 
   @override
   Widget build(BuildContext context) {

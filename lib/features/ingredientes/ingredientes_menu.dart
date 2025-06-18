@@ -8,7 +8,7 @@ class Insumo {
 }
 
 class IngredientesMenu extends StatefulWidget {
-  const IngredientesMenu({Key? key}) : super(key: key);
+  const IngredientesMenu({super.key});
 
   @override
   State<IngredientesMenu> createState() => _IngredientesMenuState();

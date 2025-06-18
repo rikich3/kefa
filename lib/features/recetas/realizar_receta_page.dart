@@ -3,7 +3,7 @@ import 'receta_model.dart';
 
 class RealizarRecetaPage extends StatefulWidget {
   final Receta receta;
-  const RealizarRecetaPage({Key? key, required this.receta}) : super(key: key);
+  const RealizarRecetaPage({super.key, required this.receta});
 
   @override
   State<RealizarRecetaPage> createState() => _RealizarRecetaPageState();

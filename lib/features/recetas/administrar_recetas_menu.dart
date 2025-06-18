@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'administrar_recetas_page.dart';
 
 class AdministrarRecetasMenu extends StatefulWidget {
-  const AdministrarRecetasMenu({Key? key}) : super(key: key);
+  const AdministrarRecetasMenu({super.key});
 
   @override
   State<AdministrarRecetasMenu> createState() => _AdministrarRecetasMenuState();

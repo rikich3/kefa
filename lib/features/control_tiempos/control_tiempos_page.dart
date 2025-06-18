@@ -15,7 +15,7 @@ class PlatoEnPreparacion {
 }
 
 class ControlTiemposPage extends StatefulWidget {
-  const ControlTiemposPage({Key? key}) : super(key: key);
+  const ControlTiemposPage({super.key});
 
   @override
   State<ControlTiemposPage> createState() => _ControlTiemposPageState();
