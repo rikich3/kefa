@@ -326,8 +326,15 @@ class _ManageTabState extends State<ManageTab> {
                 icon: const Icon(Icons.add),
                 label: const Text('Crear Nuevo Instrumento'),
                 onPressed: () {
+                  // Cierra el modal usando el contexto del modal (ctx)
                   Navigator.pop(ctx);
-                  Navigator.pushNamed(ctx, '/crearInstrumento');
+                  // Navega a la pantalla de creación usando el contexto del modal (ctx)
+                  // O podrías usar el contexto original del widget si necesitas
+                  // mantener el estado de la pestaña, pero ctx es más seguro aquí.
+                  Navigator.push(
+                    ctx, // Usa el contexto del modal para la navegación
+                    MaterialPageRoute(builder: (context) => const CrearInstrumentoPage()),
+                  );
                 },
               ),
               const SizedBox(height: 20),
