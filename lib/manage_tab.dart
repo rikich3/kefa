@@ -3,6 +3,9 @@ import 'features/ingredientes/ingredientes_menu.dart';
 import 'features/trabajadores/trabajadores_menu.dart';
 import 'features/utensilios/utensilios_menu.dart';
 import 'features/recetas/administrar_recetas_menu.dart';
+import 'features/tareas/tareas_menu.dart';
+import 'features/tareas/tarea_model.dart';
+import 'features/trabajadores/trabajador_model.dart';
 
 class ManageTab extends StatefulWidget {
   const ManageTab({super.key});
@@ -51,6 +54,22 @@ class _ManageTabState extends State<ManageTab> {
         ),
         isScrollControlled: true,
         builder: (ctx) => const AdministrarRecetasMenu(),
+      );
+    } else if (sectionName == 'Tareas') {
+      // Simulación de datos para tareas y trabajadores
+      final trabajadores = defaultTrabajadores();
+      final tareas = [
+        Tarea(id: 'ta1', nombre: 'Preparar salsa', descripcion: 'Salsa base para pastas', prioridad: 1),
+        Tarea(id: 'ta2', nombre: 'Cortar verduras', descripcion: 'Para ensalada', prioridad: 2),
+        Tarea(id: 'ta3', nombre: 'Lavar utensilios', descripcion: 'Utensilios de cocina', prioridad: 3),
+      ];
+      showModalBottomSheet(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        isScrollControlled: true,
+        builder: (ctx) => TareasMenu(tareas: tareas, trabajadores: trabajadores),
       );
     } else {
       print('Sección "$sectionName" seleccionada');
@@ -142,6 +161,20 @@ class _ManageTabState extends State<ManageTab> {
                   icon: Icons.menu_book,
                   text: 'Recetas',
                   onTap: () => _onSectionTapped('Recetas'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 30),
+          Text('Administrar Tareas', style: textTheme.titleLarge),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildAssetSection(
+                  icon: Icons.assignment,
+                  text: 'Tareas',
+                  onTap: () => _onSectionTapped('Tareas'),
                 ),
               ),
             ],
