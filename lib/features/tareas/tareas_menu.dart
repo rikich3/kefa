@@ -9,11 +9,11 @@ class TareasMenu extends StatefulWidget {
   final void Function(List<Tarea>)? onTareasActualizadas;
 
   const TareasMenu({
-    Key? key,
+    super.key,
     required this.tareas,
     required this.trabajadores,
     this.onTareasActualizadas,
-  }) : super(key: key);
+  });
 
   @override
   State<TareasMenu> createState() => _TareasMenuState();
