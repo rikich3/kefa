@@ -6,11 +6,14 @@ import 'front/state/workers_provider.dart'; // <-- Importar tu Provider
 import 'back/dataModels/worker.dart'; // <-- Importar el modelo Ingrediente (necesario para la lista)
 import 'front/state/instrumentos_provider.dart'; // <-- Importar tu Provider
 import 'back/dataModels/instrumentos.dart'; // <-- Importar el modelo Ingrediente (necesario para la lista)
+import 'front/state/recetas_provider.dart'; // <-- Importar el Provider de recetas
+import 'back/dataModels/receta.dart'; // <-- Importar el modelo de recetas
 
 // Importar las pantallas de destino
 import 'crear_ingrediente_page.dart';
 import 'front/ui/crear_worker_page.dart';
 import 'front/ui/crear_instrumento_page.dart';
+import 'front/ui/crear_receta_page.dart';
 import 'trabajadores_page.dart';
 // import 'editar_ingrediente_page.dart'; // Necesitarás una pantalla/modal de edición
 
@@ -39,6 +42,7 @@ class _ManageTabState extends State<ManageTab> {
       _showInstrumentosMenu(context);
       break;
       case 'Recetas':
+      _showRecetasMenu(context);
       break;
       default:
       // Puedes manejar otros casos aquí si es necesario
@@ -386,6 +390,137 @@ class _ManageTabState extends State<ManageTab> {
                                 },
                               ),
                             ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Método para mostrar el modal de recetas
+  void _showRecetasMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext ctx) {
+        final TextTheme textTheme = Theme.of(ctx).textTheme;
+        final ColorScheme colorScheme = Theme.of(ctx).colorScheme;
+
+        return Container(
+          height: MediaQuery.of(ctx).size.height * 0.7,
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Administrar Recetas', style: textTheme.titleLarge),
+              const SizedBox(height: 20),
+
+              // Botón "Crear Nueva Receta"
+              FilledButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Crear Nueva Receta'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    ctx,
+                    MaterialPageRoute(builder: (context) => const CrearRecetaPage()),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // Título para la lista
+              Text('Lista de Recetas', style: textTheme.titleMedium),
+              const SizedBox(height: 8),
+
+              // Lista de recetas
+              Expanded(
+                child: Consumer<RecetasProvider>(
+                  builder: (context, recetasProvider, child) {
+                    if (recetasProvider.isLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (recetasProvider.errorMessage != null) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Error: ${recetasProvider.errorMessage}',
+                              style: TextStyle(color: colorScheme.error),
+                            ),
+                            const SizedBox(height: 8),
+                            FilledButton(
+                              onPressed: () => recetasProvider.loadRecetas(),
+                              child: const Text('Reintentar'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    if (recetasProvider.recetasEntries.isEmpty) {
+                      return const Center(
+                        child: Text('No hay recetas creadas aún'),
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: recetasProvider.recetasEntries.length,
+                      itemBuilder: (context, index) {
+                        final entry = recetasProvider.recetasEntries[index];
+                        final key = entry.key;
+                        final receta = entry.value;
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              child: Text('${receta.pasos.length}'),
+                            ),
+                            title: Text(receta.nombre),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(receta.descripcion),
+                                Text(
+                                  'Tiempo total: ${receta.tiempoTotalSegundos ~/ 60}:${(receta.tiempoTotalSegundos % 60).toString().padLeft(2, '0')} • ${receta.pasos.length} pasos',
+                                  style: textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  tooltip: 'Editar',
+                                  onPressed: () {
+                                    // TODO: Implementar edición de recetas
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete),
+                                  tooltip: 'Eliminar',
+                                  onPressed: () {
+                                    recetasProvider.deleteReceta(key);
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },

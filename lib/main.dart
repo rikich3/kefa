@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart'; // Importar Hive Flutter
 import 'package:kefa/back/repositories/workers_repository_impl.dart';
 import 'package:provider/provider.dart'; // Importar Provider
-import 'package:path_provider/path_provider.dart'; // Importar path_provider para getApplicationDocumentsDirectory
 //import 'package:firebase_core/firebase_core.dart'; // Si ya configuraste Firebase
-import 'firebase_options.dart'; // Se generará
 // Importar los modelos y proveedores que necesitarás
 import 'back/dataModels/ingredientes.dart';
 import 'back/data_sources/hive/hive_ingredientes_data_source.dart';
 import 'back/repositories/ingredientes_repository_impl.dart';
 import 'front/state/ingredientes_provider.dart';
-import 'back/data_sources/hive/hive_instrumentos_data_source.dart';
 import 'back/dataModels/instrumentos.dart';
-import 'back/repositories/ingredientes_repository_impl.dart';
+import 'back/data_sources/hive/hive_instrumentos_data_source.dart';
 import 'front/state/instrumentos_provider.dart';
 import 'back/dataModels/worker.dart';
 import 'back/data_sources/hive/hive_worker_data_source.dart';
 import 'back/repositories/instrumentos_repository.impl.dart';
 import 'front/state/workers_provider.dart';
+// Importar nuevos modelos para recetas
+import 'back/dataModels/paso.dart';
+import 'back/dataModels/receta.dart';
+import 'back/data_sources/hive/hive_recetas_data_source.dart';
+import 'back/repositories/recetas_repository_impl.dart';
+import 'front/state/recetas_provider.dart';
 
 import 'home_page.dart';
 
@@ -28,6 +30,10 @@ void main() async{
   //final appDocumentDirectory = await getApplicationDocumentsDirectory();
   Hive.initFlutter();
   Hive.registerAdapter(IngredientesAdapter());
+  Hive.registerAdapter(InstrumentoAdapter());
+  Hive.registerAdapter(WorkerAdapter());
+  Hive.registerAdapter(PasoAdapter());
+  Hive.registerAdapter(RecetaAdapter());
   runApp(const MyApp());
 }
 
@@ -62,6 +68,8 @@ class MyApp extends StatelessWidget {
     final InstrumentosRepositoryImpl instrumentosRepository = InstrumentosRepositoryImpl(hiveDataSource: hiveInstrumentosDataSource);
     final HiveWorkerDataSource hiveWorkersDataSource = HiveWorkerDataSource();
     final WorkersRepositoryImpl workerRepository = WorkersRepositoryImpl(hiveDataSource: hiveWorkersDataSource);
+    final HiveRecetasDataSource hiveRecetasDataSource = HiveRecetasDataSource();
+    final RecetasRepositoryImpl recetasRepository = RecetasRepositoryImpl(hiveDataSource: hiveRecetasDataSource);
 
     return 
     MultiProvider(
@@ -71,7 +79,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) =>
           InstrumentosProvider(instrumentosRepository: instrumentosRepository)),
         ChangeNotifierProvider(create: (_) =>
-          WorkersProvider(workerRepository: workerRepository))
+          WorkersProvider(workerRepository: workerRepository)),
+        ChangeNotifierProvider(create: (_) =>
+          RecetasProvider(recetasRepository: recetasRepository))
         ],
       child: MaterialApp(
         title: 'kefa, cocina virtual',
