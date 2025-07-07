@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../back/dataModels/worker.dart';
 import '../../back/repositories/worker_repository.dart';
+import '../../back/repositories/workers_repository_impl.dart';
 
 class WorkersProvider extends ChangeNotifier {
   final WorkerRepository _workerRepository;
@@ -25,9 +26,8 @@ class WorkersProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Adaptación: getAllWorkers devuelve List<Worker>, así que generamos MapEntry con el índice como key
-      final allWorkers = await _workerRepository.getAllWorkers();
-      _workerEntries = allWorkers.asMap().entries.map((e) => MapEntry(e.key, e.value)).toList();
+      final workerEntries = await (_workerRepository as WorkersRepositoryImpl).getAllWorkersWithKeys();
+      _workerEntries = workerEntries;
     } catch (e) {
       _errorMessage = 'Error al cargar trabajadores: $e';
     } finally {
@@ -64,7 +64,22 @@ class WorkersProvider extends ChangeNotifier {
   }
 
   Future<void> deleteWorker(dynamic key) async {
-    await _workerRepository.deleteWorker(key);
-    await loadWorkers();
+    print('🔥 Provider: Iniciando eliminación de worker con key: $key (tipo: ${key.runtimeType})');
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _workerRepository.deleteWorker(key);
+      print('🔥 Provider: Eliminación exitosa, recargando lista...');
+      await loadWorkers();
+      print('🔥 Provider: Lista recargada exitosamente');
+    } catch (e) {
+      print('🔥 Provider: Error durante eliminación: $e');
+      _errorMessage = 'Error al eliminar worker: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

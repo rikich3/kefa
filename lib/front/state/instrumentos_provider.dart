@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../back/dataModels/instrumentos.dart';
 import '../../back/repositories/instrumentos_repository.dart';
+import '../../back/repositories/instrumentos_repository.impl.dart';
 
 class InstrumentosProvider extends ChangeNotifier {
   final InstrumentosRepository _instrumentosRepository;
@@ -25,9 +26,9 @@ class InstrumentosProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final allInstrumentos = await _instrumentosRepository.getAllInstrumentos();
+      final instrumentoEntries = await (_instrumentosRepository as InstrumentosRepositoryImpl).getAllInstrumentosWithKeys();
       // Si el repo devuelve List<Instrumento>, generamos MapEntry con el índice como key
-      _instrumentosEntries = allInstrumentos.asMap().entries.map((e) => MapEntry(e.key, e.value)).toList();
+      _instrumentosEntries = instrumentoEntries;
     } catch (e) {
       _errorMessage = 'Error al cargar instrumentos: $e';
     } finally {
@@ -64,7 +65,22 @@ class InstrumentosProvider extends ChangeNotifier {
   }
 
   Future<void> deleteInstrumento(dynamic key) async {
-    await _instrumentosRepository.deleteInstrumento(key);
-    await loadInstrumentos();
+    print('🔥 Provider: Iniciando eliminación de instrumento con key: $key (tipo: ${key.runtimeType})');
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _instrumentosRepository.deleteInstrumento(key);
+      print('🔥 Provider: Eliminación exitosa, recargando lista...');
+      await loadInstrumentos();
+      print('🔥 Provider: Lista recargada exitosamente');
+    } catch (e) {
+      print('🔥 Provider: Error durante eliminación: $e');
+      _errorMessage = 'Error al eliminar instrumento: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 }

@@ -7,6 +7,25 @@ class HiveInstrumentosDataSource {
   Future<Box<Instrumento>> get _instrumentosBox async =>
       await Hive.openBox<Instrumento>('instrumentos'); // Nombre de la caja
 
+  // Obtener todos los instrumentos con sus keys de Hive
+  Future<List<MapEntry<dynamic, Instrumento>>> getAllInstrumentosWithKeys() async {
+    final box = await _instrumentosBox;
+    print('📖 Cargando instrumentos con keys desde Hive. Total encontrados: ${box.length}');
+    
+    List<MapEntry<dynamic, Instrumento>> entries = [];
+    for (var key in box.keys) {
+      final instrumento = box.get(key);
+      if (instrumento != null) {
+        entries.add(MapEntry(key, instrumento));
+      }
+    }
+    
+    if (entries.isNotEmpty) {
+      print('🔍 Instrumentos encontrados: ${entries.map((e) => '${e.key}:${e.value.nombre}').toList()}');
+    }
+    return entries;
+  }
+
   // Obtener todos los instrumentoses
   Future<List<Instrumento>> getAllInstrumentos() async {
     final box = await _instrumentosBox;
@@ -30,7 +49,16 @@ class HiveInstrumentosDataSource {
   // Eliminar un instrumentose (usando su key)
   Future<void> deleteInstrumento(dynamic key) async {
     final box = await _instrumentosBox;
+    print('🗑️ Intentando eliminar instrumento con key: $key');
+    print('📊 Estado antes: ${box.length} instrumentos');
+    print('🔍 Instrumentos antes: ${box.values.map((i) => i.nombre).toList()}');
+    
     await box.delete(key);
+    await box.flush(); // Forzar guardado
+    
+    print('📊 Estado después: ${box.length} instrumentos');
+    print('🔍 Instrumentos después: ${box.values.map((i) => i.nombre).toList()}');
+    print('✅ Eliminación completada y guardada');
   }
 
   // Cerrar la caja cuando ya no se necesite (opcional, Flutter cierra al terminar)

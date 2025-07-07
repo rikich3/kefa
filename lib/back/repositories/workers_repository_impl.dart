@@ -14,6 +14,11 @@ class WorkersRepositoryImpl implements WorkerRepository {
     return hiveDataSource.getAllWorkers();
   }
 
+  // Nuevo método para obtener workers con sus keys de Hive
+  Future<List<MapEntry<dynamic, Worker>>> getAllWorkersWithKeys() {
+    return hiveDataSource.getAllWorkersWithKeys();
+  }
+
   @override
   Future<void> addWorker(Worker worker) {
     // Por ahora, solo usamos Hive. Si tuvieras Firestore también, aquí decidirías dónde guardar.

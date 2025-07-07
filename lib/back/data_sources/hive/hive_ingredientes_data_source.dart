@@ -10,15 +10,27 @@ class HiveIngredientesDataSource {
   // Obtener todos los ingredienteses
   Future<List<MapEntry<dynamic, Ingredientes>>> getAllIngredientes() async {
     final box = await _ingredientesBox;
+    print('📖 Cargando ingredientes desde Hive. Total encontrados: ${box.length}');
+    if (box.isNotEmpty) {
+      print('🔍 Ingredientes encontrados: ${box.values.map((i) => i.name).toList()}');
+    }
     return box.toMap().entries.toList();
   }
 
   // Añadir un nuevo ingredientese
   Future<void> addIngredientes(Ingredientes ingrediente) async {
     final box = await _ingredientesBox;
+    print('📦 Abriendo caja de ingredientes. Total existentes: ${box.length}');
+
     // Hive usa índices o claves para guardar. Usar add() guarda con un índice autoincremental.
-    // Puedes usar put(key, value) si quieres usar tus propias claves (ej: UUID)
     await box.add(ingrediente);
+
+    // Forzar el guardado inmediato
+    await box.flush();
+
+    print('💾 Ingrediente agregado a Hive. Nuevo total: ${box.length}');
+    print('🔍 Ingredientes en la caja: ${box.values.map((i) => i.name).toList()}');
+    print('💽 Datos forzadamente guardados en disco');
   }
 
   // Actualizar un ingredientese (usando su key)

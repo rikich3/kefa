@@ -6,11 +6,25 @@ import 'front/state/workers_provider.dart'; // <-- Importar tu Provider
 import 'back/dataModels/worker.dart'; // <-- Importar el modelo Ingrediente (necesario para la lista)
 import 'front/state/instrumentos_provider.dart'; // <-- Importar tu Provider
 import 'back/dataModels/instrumentos.dart'; // <-- Importar el modelo Ingrediente (necesario para la lista)
+import 'front/state/receta_provider.dart'; // <-- Importar Receta Provider
+import 'back/dataModels/receta.dart'; // <-- Importar el modelo Receta
+import 'front/state/paso_provider.dart'; // <-- Importar Paso Provider
+import 'back/dataModels/paso.dart'; // <-- Importar el modelo Paso
+
 
 // Importar las pantallas de destino
 import 'crear_ingrediente_page.dart';
 import 'front/ui/crear_worker_page.dart';
 import 'front/ui/crear_instrumento_page.dart';
+import 'front/ui/crear_receta_page.dart';
+import 'front/ui/crear_paso_page.dart';
+import 'front/ui/recetas_modal.dart';
+import 'front/ui/editar_ingrediente_page.dart';
+import 'front/ui/editar_worker_page.dart';
+import 'front/ui/editar_instrumento_page.dart';
+import 'front/ui/editar_receta_page.dart';
+import 'front/ui/editar_paso_page.dart';
+import 'front/ui/scheduling_test_page.dart';
 import 'trabajadores_page.dart';
 // import 'editar_ingrediente_page.dart'; // Necesitarás una pantalla/modal de edición
 
@@ -39,6 +53,10 @@ class _ManageTabState extends State<ManageTab> {
       _showInstrumentosMenu(context);
       break;
       case 'Recetas':
+      _showRecetasMenu(context);
+      break;
+      case 'Pasos':
+      _showPasosMenu(context);
       break;
       default:
       // Puedes manejar otros casos aquí si es necesario
@@ -48,6 +66,12 @@ class _ManageTabState extends State<ManageTab> {
 
   // Método para mostrar el modal de ingredientes
   void _showIngredientesMenu(BuildContext context) {
+    // Cargar ingredientes inmediatamente al abrir el modal
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('🔄 Iniciando carga de ingredientes desde el modal...');
+      Provider.of<IngredientesProvider>(context, listen: false).loadIngredients();
+    });
+    
     showModalBottomSheet(
       context: context,
       // Para permitir que el modal ocupe más espacio y la lista sea scrollable
@@ -155,11 +179,18 @@ class _ManageTabState extends State<ManageTab> {
                                 tooltip: 'Editar',
                                 onPressed: () {
                                   print('Editar ingrediente con key: $ingredientKey');
-                                  // TODO: Implementar lógica para editar
-                                  // Probablemente mostrar otro modal o navegar a una página de edición
-                                  // Pasar `ingredientKey` y/o `ingredient` a la pantalla de edición.
-                                  // Si abres otro modal, NO cierres este modal de lista.
-                                  // Si navegas a otra página, cierra este modal primero: Navigator.pop(ctx);
+                                  // Cerrar el modal actual
+                                  Navigator.pop(ctx);
+                                  // Navegar a la página de edición
+                                  Navigator.push(
+                                    ctx,
+                                    MaterialPageRoute(
+                                      builder: (context) => EditarIngredientePage(
+                                        ingredienteKey: ingredientKey,
+                                        ingrediente: ingredient,
+                                      ),
+                                    ),
+                                  );
                                 },
                               ),
                               // Botón de Eliminar
@@ -276,14 +307,25 @@ class _ManageTabState extends State<ManageTab> {
                                 icon: const Icon(Icons.edit),
                                 tooltip: 'Editar',
                                 onPressed: () {
-                                  // TODO: Implementar edición
+                                  // Cerrar el modal actual
+                                  Navigator.pop(ctx);
+                                  // Navegar a la página de edición
+                                  Navigator.push(
+                                    ctx,
+                                    MaterialPageRoute(
+                                      builder: (context) => EditarWorkerPage(
+                                        workerKey: key,
+                                        worker: worker,
+                                      ),
+                                    ),
+                                  );
                                 },
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete),
                                 tooltip: 'Eliminar',
                                 onPressed: () {
-                                  workersProvider.deleteWorker(key);
+                                  _confirmarEliminarWorker(key, worker.nombre, workersProvider);
                                 },
                               ),
                             ],
@@ -375,14 +417,25 @@ class _ManageTabState extends State<ManageTab> {
                                 icon: const Icon(Icons.edit),
                                 tooltip: 'Editar',
                                 onPressed: () {
-                                  // TODO: Implementar edición
+                                  // Cerrar el modal actual
+                                  Navigator.pop(ctx);
+                                  // Navegar a la página de edición
+                                  Navigator.push(
+                                    ctx,
+                                    MaterialPageRoute(
+                                      builder: (context) => EditarInstrumentoPage(
+                                        instrumentoKey: key,
+                                        instrumento: instrumento,
+                                      ),
+                                    ),
+                                  );
                                 },
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete),
                                 tooltip: 'Eliminar',
                                 onPressed: () {
-                                  instrumentosProvider.deleteInstrumento(key);
+                                  _confirmarEliminarInstrumento(key, instrumento.nombre, instrumentosProvider);
                                 },
                               ),
                             ],
@@ -396,6 +449,217 @@ class _ManageTabState extends State<ManageTab> {
               const SizedBox(height: 20),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  // Método para mostrar el modal de recetas
+  void _showRecetasMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext ctx) {
+        return const RecetasModal();
+      },
+    );
+  }
+
+  // Método para mostrar el modal de pasos
+  void _showPasosMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext ctx) {
+        final textTheme = Theme.of(ctx).textTheme;
+        final colorScheme = Theme.of(ctx).colorScheme;
+
+        return Container(
+          height: MediaQuery.of(ctx).size.height * 0.7,
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Administrar Pasos', style: textTheme.titleLarge),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Crear Nuevo Paso'),
+                onPressed: () {
+                  // Cierra el modal usando el contexto del modal (ctx)
+                  Navigator.pop(ctx);
+                  // Navega a la pantalla de creación usando el contexto del modal (ctx)
+                  // O podrías usar el contexto original del widget si necesitas
+                  // mantener el estado de la pestaña, pero ctx es más seguro aquí.
+                  Navigator.push(
+                    ctx, // Usa el contexto del modal para la navegación
+                    MaterialPageRoute(builder: (context) => const CrearPasoPage(
+                      recetaId: 'standalone', // Para pasos independientes
+                      orden: 1, // Orden por defecto
+                    )),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+              Text('Lista de Pasos', style: textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Expanded(
+                child: Consumer<PasoProvider>(
+                  builder: (context, pasoProvider, child) {
+                    if (pasoProvider.isLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (pasoProvider.errorMessage != null) {
+                      return Center(
+                        child: Text(
+                          pasoProvider.errorMessage!,
+                          style: textTheme.bodyMedium?.copyWith(color: colorScheme.error),
+                          textAlign: TextAlign.center,
+                        ),
+                      );
+                    }
+                    final pasoEntries = pasoProvider.pasoEntries;
+                    if (pasoEntries.isEmpty) {
+                      return const Center(child: Text('No hay pasos guardados aún.'));
+                    }
+                    return ListView.builder(
+                      itemCount: pasoEntries.length,
+                      itemBuilder: (context, index) {
+                        final entry = pasoEntries[index];
+                        final key = entry.key;
+                        final paso = entry.value;
+                        return ListTile(
+                          title: Text(paso.nombrePaso),
+                          subtitle: Text('Orden: ${paso.orden} - ${paso.contenidoAccion}'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                tooltip: 'Editar',
+                                onPressed: () {
+                                  // Cerrar el modal actual
+                                  Navigator.pop(ctx);
+                                  // Navegar a la página de edición
+                                  Navigator.push(
+                                    ctx,
+                                    MaterialPageRoute(
+                                      builder: (context) => EditarPasoPage(
+                                        pasoKey: key,
+                                        paso: paso,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete),
+                                tooltip: 'Eliminar',
+                                onPressed: () {
+                                  pasoProvider.deletePaso(key);
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmarEliminarInstrumento(dynamic key, String nombreInstrumento, InstrumentosProvider provider) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmar eliminación'),
+          content: Text('¿Está seguro que desea eliminar el instrumento "$nombreInstrumento"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                try {
+                  await provider.deleteInstrumento(key);
+                  if (mounted) {
+                    Navigator.of(context).pop(); // Cerrar dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Instrumento eliminado exitosamente')),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    Navigator.of(context).pop(); // Cerrar dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error al eliminar instrumento: $e')),
+                    );
+                  }
+                }
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmarEliminarWorker(dynamic key, String nombreWorker, WorkersProvider provider) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmar eliminación'),
+          content: Text('¿Está seguro que desea eliminar el trabajador "$nombreWorker"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                try {
+                  await provider.deleteWorker(key);
+                  if (mounted) {
+                    Navigator.of(context).pop(); // Cerrar dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Trabajador eliminado exitosamente')),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    Navigator.of(context).pop(); // Cerrar dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error al eliminar trabajador: $e')),
+                    );
+                  }
+                }
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: const Text('Eliminar'),
+            ),
+          ],
         );
       },
     );
@@ -512,6 +776,49 @@ class _ManageTabState extends State<ManageTab> {
               ),
             ],
           ),
+          const SizedBox(height: 30),
+
+          // --- Sección Administrar Pasos ---
+          Text(
+            'Administrar Pasos',
+            style: textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                 child: _buildAssetSection(
+                  icon: Icons.list_alt,
+                  text: 'Pasos',
+                  onTap: () => _onSectionTapped('Pasos'), // Llama al método general
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 30),
+
+          // --- Sección Algoritmo de Scheduling ---
+          Text(
+            'Algoritmo de Scheduling',
+            style: textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildAssetSection(
+                  icon: Icons.schedule,
+                  text: 'Test Scheduling',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SchedulingTestPage()),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 50),
           // Ya no mostramos la lista de ingredientes aquí, se muestra en el modal
         ],
@@ -549,7 +856,7 @@ class _ManageTabState extends State<ManageTab> {
             Text(
               text,
               textAlign: TextAlign.center,
-              style: textTheme.labelMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+              style: textTheme.titleMedium?.copyWith(color: colorScheme.onSurfaceVariant),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),

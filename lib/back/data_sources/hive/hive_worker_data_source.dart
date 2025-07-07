@@ -7,6 +7,25 @@ class HiveWorkerDataSource {
   Future<Box<Worker>> get _workerBox async =>
       await Hive.openBox<Worker>('worker'); // Nombre de la caja
 
+  // Obtener todos los workers con sus keys de Hive
+  Future<List<MapEntry<dynamic, Worker>>> getAllWorkersWithKeys() async {
+    final box = await _workerBox;
+    print('📖 Cargando workers con keys desde Hive. Total encontrados: ${box.length}');
+    
+    List<MapEntry<dynamic, Worker>> entries = [];
+    for (var key in box.keys) {
+      final worker = box.get(key);
+      if (worker != null) {
+        entries.add(MapEntry(key, worker));
+      }
+    }
+    
+    if (entries.isNotEmpty) {
+      print('🔍 Workers encontrados: ${entries.map((e) => '${e.key}:${e.value.nombre}').toList()}');
+    }
+    return entries;
+  }
+
   // Obtener todos los worker
   Future<List<Worker>> getAllWorkers() async {
     final box = await _workerBox;
@@ -27,10 +46,19 @@ class HiveWorkerDataSource {
      await box.put(key, worker); // key es el índice/clave con el que se guardó
   }
 
-  // Eliminar un workere (usando su key)
+  // Eliminar un worker (usando su key)
   Future<void> deleteWorker(dynamic key) async {
     final box = await _workerBox;
+    print('🗑️ Intentando eliminar worker con key: $key');
+    print('📊 Estado antes: ${box.length} workers');
+    print('🔍 Workers antes: ${box.values.map((w) => w.nombre).toList()}');
+    
     await box.delete(key);
+    await box.flush(); // Forzar guardado
+    
+    print('📊 Estado después: ${box.length} workers');
+    print('🔍 Workers después: ${box.values.map((w) => w.nombre).toList()}');
+    print('✅ Eliminación completada y guardada');
   }
 
   // Cerrar la caja cuando ya no se necesite (opcional, Flutter cierra al terminar)

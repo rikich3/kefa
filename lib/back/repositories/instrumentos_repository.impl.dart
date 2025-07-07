@@ -14,6 +14,11 @@ class InstrumentosRepositoryImpl implements InstrumentosRepository {
     return hiveDataSource.getAllInstrumentos();
   }
 
+  // Nuevo método para obtener instrumentos con sus keys de Hive
+  Future<List<MapEntry<dynamic, Instrumento>>> getAllInstrumentosWithKeys() {
+    return hiveDataSource.getAllInstrumentosWithKeys();
+  }
+
   @override
   Future<void> addInstrumento(Instrumento instrumento) {
     // Por ahora, solo usamos Hive. Si tuvieras Firestore también, aquí decidirías dónde guardar.
