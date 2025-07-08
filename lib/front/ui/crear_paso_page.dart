@@ -204,9 +204,10 @@ class _CrearPasoPageState extends State<CrearPasoPage> {
                             final key = provider.ingredientesEntries[index].key.toString();
                             
                             // Buscar si ya está seleccionado
-                            final existingIngredient = _ingredientesRequeridos
-                                .where((req) => req.ingredienteId == key)
-                                .firstOrNull;
+                            final ingredientesEncontrados = _ingredientesRequeridos
+                                .where((req) => req.ingredienteId == key);
+                            final existingIngredient = ingredientesEncontrados.isNotEmpty ? 
+                                ingredientesEncontrados.first : null;
                             
                             return Card(
                               child: Padding(

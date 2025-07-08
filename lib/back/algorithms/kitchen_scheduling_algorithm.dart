@@ -114,7 +114,8 @@ class KitchenSchedulingAlgorithm {
     // Procesar cada tarea
     for (int i = 0; i < ordenFinal.length; i++) {
       String pasoId = ordenFinal[i];
-      PasoScheduling? paso = listaPasos.where((p) => p.id == pasoId).firstOrNull;
+      final pasosEncontrados = listaPasos.where((p) => p.id == pasoId);
+      PasoScheduling? paso = pasosEncontrados.isNotEmpty ? pasosEncontrados.first : null;
       
       if (paso == null) {
         print('⚠️ Paso no encontrado: $pasoId');
@@ -375,7 +376,8 @@ class KitchenSchedulingAlgorithm {
     for (var cocinero in listaCocineros) {
       print('${cocinero.nombre} (${cocinero.tipo}):');
       for (var item in cocinero.horario) {
-        PasoScheduling? paso = listaPasos.where((p) => p.id == item.pasoId).firstOrNull;
+        final pasosEncontrados = listaPasos.where((p) => p.id == item.pasoId);
+        PasoScheduling? paso = pasosEncontrados.isNotEmpty ? pasosEncontrados.first : null;
         print('  ${item.tiempoInicio}s - ${item.tiempoInicio + item.duracion}s: ${paso?.nombre ?? 'Paso desconocido'}');
       }
       print('  Tiempo total ocupado: ${cocinero.ori}s\\n');
@@ -385,7 +387,8 @@ class KitchenSchedulingAlgorithm {
     for (var utensilio in listaUtensilios) {
       print('${utensilio.nombre} (${utensilio.tipo}):');
       for (var item in utensilio.horario) {
-        PasoScheduling? paso = listaPasos.where((p) => p.id == item.pasoId).firstOrNull;
+        final pasosEncontrados = listaPasos.where((p) => p.id == item.pasoId);
+        PasoScheduling? paso = pasosEncontrados.isNotEmpty ? pasosEncontrados.first : null;
         print('  ${item.tiempoInicio}s - ${item.tiempoInicio + item.duracion}s: ${paso?.nombre ?? 'Paso desconocido'}');
       }
       print('  Tiempo total ocupado: ${utensilio.ori}s\\n');

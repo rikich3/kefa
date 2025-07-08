@@ -44,7 +44,9 @@ class _CrearPasoSchedulingDialogState extends State<CrearPasoSchedulingDialog> {
     
     // Cargar los pasos de la receta actual para el selector de dependencias
     // Lo hacemos inmediatamente para asegurar que los datos estén disponibles
-    Provider.of<PasoProvider>(context, listen: false).loadPasosByRecetaId(widget.recetaId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<PasoProvider>(context, listen: false).loadPasosByRecetaId(widget.recetaId);
+    });
     
     if (_esEdicion) {
       final paso = widget.pasoParaEditar!;
@@ -55,6 +57,9 @@ class _CrearPasoSchedulingDialogState extends State<CrearPasoSchedulingDialog> {
       _tipoUtensilioSeleccionado = paso.tipoUtensilio; // Puede ser null
       _dependenciasSeleccionadas = List<String>.from(paso.dependencias ?? []);
       _ingredientesRequeridos = List.from(paso.ingredientesRequeridos);
+      
+      print('🔧 Editando paso: ${paso.nombrePaso} (ID: ${paso.id})');
+      print('   Dependencias actuales: $_dependenciasSeleccionadas');
     }
   }
 
@@ -92,9 +97,10 @@ class _CrearPasoSchedulingDialogState extends State<CrearPasoSchedulingDialog> {
                             final ingrediente = provider.ingredientesEntries[index].value;
                             final key = provider.ingredientesEntries[index].key.toString();
                             
-                            final existingIngredient = _ingredientesRequeridos
-                                .where((req) => req.ingredienteId == key)
-                                .firstOrNull;
+                            final ingredientesEncontrados = _ingredientesRequeridos
+                                .where((req) => req.ingredienteId == key);
+                            final existingIngredient = ingredientesEncontrados.isNotEmpty ? 
+                                ingredientesEncontrados.first : null;
                             
                             return Card(
                               child: Padding(
@@ -371,11 +377,25 @@ class _CrearPasoSchedulingDialogState extends State<CrearPasoSchedulingDialog> {
       try {
         if (_esEdicion) {
           final pasoProvider = Provider.of<PasoProvider>(context, listen: false);
-          final pasoKey = pasoProvider.pasoEntries
-              .firstWhere((entry) => entry.value.id == widget.pasoParaEditar!.id)
-              .key;
+          
+          // Asegurar que tenemos los datos más actualizados
+          await pasoProvider.loadPasos();
+          
+          // Buscar la key del paso en la lista general (que tiene las keys reales de Hive)
+          dynamic pasoKey;
+          try {
+            final entryGeneral = pasoProvider.pasoEntries
+                .firstWhere((entry) => entry.value.id == widget.pasoParaEditar!.id);
+            pasoKey = entryGeneral.key;
+            
+            print('🔧 Editando paso con ID: ${widget.pasoParaEditar!.id}, key encontrada: $pasoKey');
+          } catch (e) {
+            throw Exception('No se pudo encontrar el paso para editar. ID: ${widget.pasoParaEditar!.id}. Error: $e');
+          }
+          
           await pasoProvider.updatePaso(pasoKey, paso);
         } else {
+          print('🆕 Creando nuevo paso con ID: ${paso.id}');
           await Provider.of<PasoProvider>(context, listen: false).addPaso(paso);
         }
         
@@ -383,6 +403,7 @@ class _CrearPasoSchedulingDialogState extends State<CrearPasoSchedulingDialog> {
           Navigator.pop(context, true);
         }
       } catch (e) {
+        print('❌ Error al guardar paso: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error al guardar paso: $e')),

@@ -188,6 +188,11 @@ class _CrearRecetaNuevaPageState extends State<CrearRecetaNuevaPage> {
   void _editarPaso(Paso paso) async {
     // Asegurar que los pasos estén cargados antes de abrir el diálogo
     final pasoProvider = Provider.of<PasoProvider>(context, listen: false);
+    
+    print('🔧 Iniciando edición del paso: ${paso.nombrePaso} (ID: ${paso.id})');
+    
+    // Cargar datos actualizados antes de abrir el diálogo
+    await pasoProvider.loadPasos();
     await pasoProvider.loadPasosByRecetaId(_recetaCreada!.nombre);
     
     if (mounted) {
@@ -201,8 +206,11 @@ class _CrearRecetaNuevaPageState extends State<CrearRecetaNuevaPage> {
       );
       
       if (result == true && mounted) {
+        print('🔧 Edición completada exitosamente, recargando pasos...');
+        
         // Recargar todos los pasos después de editar
         _cargarPasos();
+        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Paso actualizado exitosamente')),
@@ -217,7 +225,18 @@ class _CrearRecetaNuevaPageState extends State<CrearRecetaNuevaPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirmar eliminación'),
-        content: Text('¿Está seguro que desea eliminar el paso "${paso.nombrePaso}"?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('¿Está seguro que desea eliminar el paso "${paso.nombrePaso}"?'),
+            const SizedBox(height: 8),
+            Text(
+              'Esta acción también actualizará las dependencias de otros pasos que dependan de este.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -235,20 +254,82 @@ class _CrearRecetaNuevaPageState extends State<CrearRecetaNuevaPage> {
     if (confirm == true && mounted) {
       try {
         final pasoProvider = Provider.of<PasoProvider>(context, listen: false);
-        final pasoKey = pasoProvider.pasoEntries
-            .firstWhere((entry) => entry.value.id == paso.id)
-            .key;
+        
+        // Asegurar que tenemos los datos más actualizados
+        await pasoProvider.loadPasos();
+        
+        // Buscar la key del paso en la lista general (que tiene las keys reales de Hive)
+        dynamic pasoKey;
+        try {
+          final entryGeneral = pasoProvider.pasoEntries
+              .firstWhere((entry) => entry.value.id == paso.id);
+          pasoKey = entryGeneral.key;
+          
+          print('🔥 Eliminando paso: ${paso.nombrePaso} (ID: ${paso.id}, key encontrada: $pasoKey)');
+        } catch (e) {
+          throw Exception('No se pudo encontrar el paso para eliminar. ID: ${paso.id}. Error: $e');
+        }
+        
+        // Antes de eliminar, actualizar dependencias de otros pasos que dependen de este
+        final todosLosPasos = pasoProvider.pasoEntries
+            .map((entry) => entry.value)
+            .where((p) => p.recetaId == _recetaCreada!.nombre && p.id != paso.id)
+            .toList();
+        
+        for (var otroPaso in todosLosPasos) {
+          if (otroPaso.dependencias != null && otroPaso.dependencias!.contains(paso.id)) {
+            print('🔗 Actualizando dependencias del paso: ${otroPaso.nombrePaso}');
+            final nuevasDependencias = List<String>.from(otroPaso.dependencias!)
+              ..remove(paso.id);
+            
+            final pasoActualizado = Paso(
+              id: otroPaso.id,
+              recetaId: otroPaso.recetaId,
+              nombrePaso: otroPaso.nombrePaso,
+              contenidoAccion: otroPaso.contenidoAccion,
+              recursosCocinasRequeridos: otroPaso.recursosCocinasRequeridos,
+              ingredientesRequeridos: otroPaso.ingredientesRequeridos,
+              recursoAlmacenamiento: otroPaso.recursoAlmacenamiento,
+              tiempoCoccionSegundos: otroPaso.tiempoCoccionSegundos,
+              tiempoPreparacionSegundos: otroPaso.tiempoPreparacionSegundos,
+              tipoCoccion: otroPaso.tipoCoccion,
+              tipoAlmacenamiento: otroPaso.tipoAlmacenamiento,
+              tareasAnterioresDirectas: otroPaso.tareasAnterioresDirectas,
+              orden: otroPaso.orden,
+              tipoCocinero: otroPaso.tipoCocinero,
+              tipoUtensilio: otroPaso.tipoUtensilio,
+              dependencias: nuevasDependencias,
+            );
+            
+            // Buscar key del otro paso y actualizarlo
+            try {
+              final otroEntry = pasoProvider.pasoEntries
+                  .firstWhere((entry) => entry.value.id == otroPaso.id);
+              await pasoProvider.updatePaso(otroEntry.key, pasoActualizado);
+            } catch (e) {
+              print('⚠️ No se pudo actualizar dependencias del paso ${otroPaso.nombrePaso}: $e');
+            }
+          }
+        }
+        
+        // Ahora eliminar el paso actual
         await pasoProvider.deletePaso(pasoKey);
         
         // Recargar todos los pasos después de eliminar
         _cargarPasos();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Paso eliminado exitosamente')),
-        );
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Paso eliminado exitosamente')),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al eliminar paso: $e')),
-        );
+        print('❌ Error al eliminar paso: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al eliminar paso: $e')),
+          );
+        }
       }
     }
   }

@@ -29,7 +29,21 @@ class HivePasoDataSource {
   // Actualizar un paso
   Future<void> updatePaso(dynamic key, Paso paso) async {
     final box = await _pasoBox;
-    await box.put(key, paso);
+    print('🔧 HivePasoDataSource: Actualizando paso con key: $key');
+    print('   Paso ID: ${paso.id}, Nombre: ${paso.nombrePaso}');
+    print('   Total pasos en caja antes: ${box.length}');
+    
+    // Verificar si la key existe
+    if (box.containsKey(key)) {
+      await box.put(key, paso);
+      print('   ✅ Paso actualizado exitosamente');
+    } else {
+      print('   ❌ La key $key no existe en la caja');
+      print('   Keys disponibles: ${box.keys.toList()}');
+      throw Exception('Key $key no encontrada para actualizar');
+    }
+    
+    print('   Total pasos en caja después: ${box.length}');
   }
 
   // Eliminar un paso
@@ -37,9 +51,20 @@ class HivePasoDataSource {
     final box = await _pasoBox;
     print('🔥 HivePasoDataSource: Eliminando paso con key: $key');
     print('🔥 HivePasoDataSource: Pasos antes de eliminar: ${box.length}');
-    await box.delete(key);
+    
+    // Verificar si la key existe
+    if (box.containsKey(key)) {
+      final paso = box.get(key);
+      print('🔥 HivePasoDataSource: Eliminando paso: ${paso?.nombrePaso} (ID: ${paso?.id})');
+      await box.delete(key);
+      print('🔥 HivePasoDataSource: Paso eliminado exitosamente');
+    } else {
+      print('🔥 HivePasoDataSource: ❌ La key $key no existe en la caja');
+      print('🔥 HivePasoDataSource: Keys disponibles: ${box.keys.toList()}');
+      throw Exception('Key $key no encontrada para eliminar');
+    }
+    
     print('🔥 HivePasoDataSource: Pasos después de eliminar: ${box.length}');
-    print('🔥 HivePasoDataSource: Paso eliminado exitosamente');
   }
 
   // Eliminar todos los pasos de una receta

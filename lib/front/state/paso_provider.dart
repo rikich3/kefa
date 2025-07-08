@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../../back/repositories/paso_repository.dart';
 import '../../back/dataModels/paso.dart';
 
@@ -28,12 +29,19 @@ class PasoProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final pasos = await pasoRepository.getAllPasos();
-      _pasoEntries = pasos.asMap().entries.map((entry) {
+      // Necesitamos acceder directamente a la caja para obtener las keys reales
+      final box = await Hive.openBox<Paso>('pasos');
+      _pasoEntries = box.toMap().entries.map((entry) {
         return MapEntry(entry.key, entry.value);
       }).toList();
+      
+      print('🔍 PasoProvider.loadPasos: Cargados ${_pasoEntries.length} pasos con keys reales');
+      for (var entry in _pasoEntries) {
+        print('   - Key: ${entry.key}, Paso: ${entry.value.nombrePaso} (ID: ${entry.value.id})');
+      }
     } catch (e) {
       _errorMessage = 'Error al cargar pasos: $e';
+      print('❌ Error en loadPasos: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -48,12 +56,21 @@ class PasoProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final pasos = await pasoRepository.getPasosByRecetaId(recetaId);
-      _pasosCurrentReceta = pasos.asMap().entries.map((entry) {
-        return MapEntry(entry.key, entry.value);
-      }).toList();
+      // Primero cargar todos los pasos para mantener las keys sincronizadas
+      await loadPasos();
+      
+      // Luego filtrar por receta específica manteniendo las keys originales
+      _pasosCurrentReceta = _pasoEntries
+          .where((entry) => entry.value.recetaId == recetaId)
+          .toList();
+          
+      print('🔍 PasoProvider.loadPasosByRecetaId: Cargados ${_pasosCurrentReceta.length} pasos para receta "$recetaId"');
+      for (var entry in _pasosCurrentReceta) {
+        print('   - Key: ${entry.key}, Paso: ${entry.value.nombrePaso} (ID: ${entry.value.id})');
+      }
     } catch (e) {
       _errorMessage = 'Error al cargar pasos de la receta: $e';
+      print('❌ Error en loadPasosByRecetaId: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

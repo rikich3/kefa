@@ -12,6 +12,7 @@ import 'back/dataModels/horario_item.dart';
 import 'back/dataModels/cocinero_scheduling.dart';
 import 'back/dataModels/utensilio_scheduling.dart';
 import 'back/dataModels/paso_scheduling.dart';
+import 'back/dataModels/estado_scheduling.dart';
 
 // Importar data sources
 import 'back/data_sources/hive/hive_ingredientes_data_source.dart';
@@ -55,6 +56,9 @@ void main() async {
   Hive.registerAdapter(CocineroSchedulingAdapter());
   Hive.registerAdapter(UtensilioSchedulingAdapter());
   Hive.registerAdapter(PasoSchedulingAdapter());
+  Hive.registerAdapter(EstadoPasoAdapter());
+  Hive.registerAdapter(PasoSchedulingDinamicoAdapter());
+  Hive.registerAdapter(EstadoSchedulingAdapter());
   
   // Test de persistencia
   print('🔬 Ejecutando test de persistencia...');
@@ -151,7 +155,7 @@ class MyApp extends StatelessWidget {
           // Puedes ajustar otros aspectos del tema aquí si es necesario
         ),
         // Opcional: Configurar un tema oscuro si lo deseas
-        darkTheme: ThemeData(
+        darkTheme: ThemeData( 
            useMaterial3: true,
            colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6699CC), brightness: Brightness.dark),
            textTheme: myTextTheme, // Usar la misma tipografía, se adapta a colores oscuros

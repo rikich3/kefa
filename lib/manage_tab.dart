@@ -8,24 +8,17 @@ import 'front/state/instrumentos_provider.dart'; // <-- Importar tu Provider
 import 'back/dataModels/instrumentos.dart'; // <-- Importar el modelo Ingrediente (necesario para la lista)
 import 'front/state/receta_provider.dart'; // <-- Importar Receta Provider
 import 'back/dataModels/receta.dart'; // <-- Importar el modelo Receta
-import 'front/state/paso_provider.dart'; // <-- Importar Paso Provider
-import 'back/dataModels/paso.dart'; // <-- Importar el modelo Paso
 
 
 // Importar las pantallas de destino
 import 'crear_ingrediente_page.dart';
 import 'front/ui/crear_worker_page.dart';
 import 'front/ui/crear_instrumento_page.dart';
-import 'front/ui/crear_receta_page.dart';
-import 'front/ui/crear_paso_page.dart';
 import 'front/ui/recetas_modal.dart';
 import 'front/ui/editar_ingrediente_page.dart';
 import 'front/ui/editar_worker_page.dart';
 import 'front/ui/editar_instrumento_page.dart';
-import 'front/ui/editar_receta_page.dart';
-import 'front/ui/editar_paso_page.dart';
 import 'front/ui/scheduling_test_page.dart';
-import 'trabajadores_page.dart';
 // import 'editar_ingrediente_page.dart'; // Necesitarás una pantalla/modal de edición
 
 class ManageTab extends StatefulWidget {
@@ -54,9 +47,6 @@ class _ManageTabState extends State<ManageTab> {
       break;
       case 'Recetas':
       _showRecetasMenu(context);
-      break;
-      case 'Pasos':
-      _showPasosMenu(context);
       break;
       default:
       // Puedes manejar otros casos aquí si es necesario
@@ -225,15 +215,6 @@ class _ManageTabState extends State<ManageTab> {
       },
     );
   }
-
-  // Método dummy para navegar a la página de trabajadores (ya estaba en tu código)
-  // Lo dejé comentado en _onSectionTapped porque ahora el onTap del Expanded lo llama directo
-  void _navigateToTrabajadoresPage(BuildContext context) {
-     Navigator.push(
-       context,
-       MaterialPageRoute(builder: (context) => const TrabajadoresPage(esSuperusuario: true)),
-     );
-   }
 
     void _showWorkersMenu(BuildContext context) {
     showModalBottomSheet(
@@ -469,118 +450,6 @@ class _ManageTabState extends State<ManageTab> {
   }
 
   // Método para mostrar el modal de pasos
-  void _showPasosMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext ctx) {
-        final textTheme = Theme.of(ctx).textTheme;
-        final colorScheme = Theme.of(ctx).colorScheme;
-
-        return Container(
-          height: MediaQuery.of(ctx).size.height * 0.7,
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Administrar Pasos', style: textTheme.titleLarge),
-              const SizedBox(height: 20),
-              FilledButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Crear Nuevo Paso'),
-                onPressed: () {
-                  // Cierra el modal usando el contexto del modal (ctx)
-                  Navigator.pop(ctx);
-                  // Navega a la pantalla de creación usando el contexto del modal (ctx)
-                  // O podrías usar el contexto original del widget si necesitas
-                  // mantener el estado de la pestaña, pero ctx es más seguro aquí.
-                  Navigator.push(
-                    ctx, // Usa el contexto del modal para la navegación
-                    MaterialPageRoute(builder: (context) => const CrearPasoPage(
-                      recetaId: 'standalone', // Para pasos independientes
-                      orden: 1, // Orden por defecto
-                    )),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
-              Text('Lista de Pasos', style: textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Expanded(
-                child: Consumer<PasoProvider>(
-                  builder: (context, pasoProvider, child) {
-                    if (pasoProvider.isLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (pasoProvider.errorMessage != null) {
-                      return Center(
-                        child: Text(
-                          pasoProvider.errorMessage!,
-                          style: textTheme.bodyMedium?.copyWith(color: colorScheme.error),
-                          textAlign: TextAlign.center,
-                        ),
-                      );
-                    }
-                    final pasoEntries = pasoProvider.pasoEntries;
-                    if (pasoEntries.isEmpty) {
-                      return const Center(child: Text('No hay pasos guardados aún.'));
-                    }
-                    return ListView.builder(
-                      itemCount: pasoEntries.length,
-                      itemBuilder: (context, index) {
-                        final entry = pasoEntries[index];
-                        final key = entry.key;
-                        final paso = entry.value;
-                        return ListTile(
-                          title: Text(paso.nombrePaso),
-                          subtitle: Text('Orden: ${paso.orden} - ${paso.contenidoAccion}'),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit),
-                                tooltip: 'Editar',
-                                onPressed: () {
-                                  // Cerrar el modal actual
-                                  Navigator.pop(ctx);
-                                  // Navegar a la página de edición
-                                  Navigator.push(
-                                    ctx,
-                                    MaterialPageRoute(
-                                      builder: (context) => EditarPasoPage(
-                                        pasoKey: key,
-                                        paso: paso,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                tooltip: 'Eliminar',
-                                onPressed: () {
-                                  pasoProvider.deletePaso(key);
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   void _confirmarEliminarInstrumento(dynamic key, String nombreInstrumento, InstrumentosProvider provider) {
     showDialog(
       context: context,
@@ -668,7 +537,6 @@ class _ManageTabState extends State<ManageTab> {
   @override
   Widget build(BuildContext context) {
     final TextTheme textTheme = Theme.of(context).textTheme;
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -772,25 +640,6 @@ class _ManageTabState extends State<ManageTab> {
                   icon: Icons.menu_book,
                   text: 'Recetas',
                   onTap: () => _onSectionTapped('Recetas'), // Llama al método general
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 30),
-
-          // --- Sección Administrar Pasos ---
-          Text(
-            'Administrar Pasos',
-            style: textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                 child: _buildAssetSection(
-                  icon: Icons.list_alt,
-                  text: 'Pasos',
-                  onTap: () => _onSectionTapped('Pasos'), // Llama al método general
                 ),
               ),
             ],
