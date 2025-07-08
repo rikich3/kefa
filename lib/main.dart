@@ -8,11 +8,10 @@ import 'back/dataModels/instrumentos.dart';
 import 'back/dataModels/worker.dart';
 import 'back/dataModels/receta.dart';
 import 'back/dataModels/paso.dart';
-// TODO: Importar estos cuando estén listos para usar
-// import 'back/dataModels/horario_item.dart';
-// import 'back/dataModels/cocinero_scheduling.dart';
-// import 'back/dataModels/utensilio_scheduling.dart';
-// import 'back/dataModels/paso_scheduling.dart';
+import 'back/dataModels/horario_item.dart';
+import 'back/dataModels/cocinero_scheduling.dart';
+import 'back/dataModels/utensilio_scheduling.dart';
+import 'back/dataModels/paso_scheduling.dart';
 
 // Importar data sources
 import 'back/data_sources/hive/hive_ingredientes_data_source.dart';
@@ -52,11 +51,10 @@ void main() async {
   Hive.registerAdapter(RecetaAdapter());
   Hive.registerAdapter(PasoAdapter());
   Hive.registerAdapter(IngredienteRequeridoAdapter());
-  // TODO: Activar estos adapters cuando estén listos para usar
-  // Hive.registerAdapter(HorarioItemAdapter());
-  // Hive.registerAdapter(CocineroSchedulingAdapter());
-  // Hive.registerAdapter(UtensilioSchedulingAdapter());
-  // Hive.registerAdapter(PasoSchedulingAdapter());
+  Hive.registerAdapter(HorarioItemAdapter());
+  Hive.registerAdapter(CocineroSchedulingAdapter());
+  Hive.registerAdapter(UtensilioSchedulingAdapter());
+  Hive.registerAdapter(PasoSchedulingAdapter());
   
   // Test de persistencia
   print('🔬 Ejecutando test de persistencia...');

@@ -23,10 +23,17 @@ class CombinacionScheduling {
 }
 
 class KitchenSchedulingAlgorithm {
-  List<CocineroScheduling> cocineros = [];
-  List<UtensilioScheduling> utensilios = [];
-  Map<String, PasoScheduling> pasos = {};
+  List<CocineroScheduling> listaCocineros = [];
+  List<UtensilioScheduling> listaUtensilios = [];
+  List<PasoScheduling> listaPasos = [];
   int oriMin = 0; // valor mínimo de ori de cocineros
+  
+  // Propiedades compatibles con la UI
+  List<CocineroScheduling> get cocineros => listaCocineros;
+  List<UtensilioScheduling> get utensilios => listaUtensilios;
+  Map<String, PasoScheduling> get pasos => {
+    for (var paso in listaPasos) paso.id: paso
+  };
 
   KitchenSchedulingAlgorithm();
 
@@ -35,17 +42,17 @@ class KitchenSchedulingAlgorithm {
     required List<UtensilioScheduling> listaUtensilios,
     required List<PasoScheduling> listaPasos,
   }) {
-    cocineros = listaCocineros;
-    utensilios = listaUtensilios;
-    pasos = {for (var paso in listaPasos) paso.id: paso};
+    this.listaCocineros = listaCocineros;
+    this.listaUtensilios = listaUtensilios;
+    this.listaPasos = listaPasos;
     oriMin = 0;
     
     // Reiniciar horarios pero preservar ori inicial de recursos
-    for (var cocinero in cocineros) {
+    for (var cocinero in this.listaCocineros) {
       cocinero.horario.clear();
       // No modificar cocinero.ori para preservar valores iniciales
     }
-    for (var utensilio in utensilios) {
+    for (var utensilio in this.listaUtensilios) {
       utensilio.horario.clear();
       // No modificar utensilio.ori para preservar valores iniciales (como B2 que empieza en 30s)
     }
@@ -54,83 +61,18 @@ class KitchenSchedulingAlgorithm {
     actualizarOriMin();
 
     print('🔧 Recursos inicializados:');
-    print('   Cocineros: ${cocineros.length}');
-    print('   Utensilios: ${utensilios.length}');
-    print('   Pasos: ${pasos.length}');
+    print('   Cocineros: ${this.listaCocineros.length}');
+    print('   Utensilios: ${this.listaUtensilios.length}');
+    print('   Pasos: ${this.listaPasos.length}');
     
     // Mostrar estado inicial de todos los recursos
     print('📊 Estado inicial de recursos:');
-    for (var cocinero in cocineros) {
+    for (var cocinero in this.listaCocineros) {
       print('   ${cocinero.toString()}');
     }
-    for (var utensilio in utensilios) {
+    for (var utensilio in this.listaUtensilios) {
       print('   ${utensilio.toString()}');
     }
-  }
-
-  List<String> obtenerOrdenEjecucion(String pasoRaizId) {
-    print('🔍 Obteniendo orden de ejecución para paso raíz: $pasoRaizId');
-    
-    // Organizar pasos por niveles (del último nivel hacia la raíz)
-    Map<int, List<String>> niveles = {};
-    Set<String> visitados = {};
-    
-    // Función recursiva para calcular niveles
-    int calcularNivel(String pasoId) {
-      if (visitados.contains(pasoId)) {
-        // Si ya fue visitado, buscar en qué nivel está
-        for (int nivel in niveles.keys) {
-          if (niveles[nivel]!.contains(pasoId)) {
-            return nivel;
-          }
-        }
-      }
-      
-      visitados.add(pasoId);
-      PasoScheduling paso = pasos[pasoId]!;
-      
-      // Si no tiene dependencias, es nivel 0 (hojas)
-      if (paso.dependencias.isEmpty) {
-        niveles[0] = niveles[0] ?? [];
-        niveles[0]!.add(pasoId);
-        return 0;
-      }
-      
-      // Calcular el nivel máximo de las dependencias + 1
-      int nivelMaximo = -1;
-      for (String dep in paso.dependencias) {
-        int nivelDep = calcularNivel(dep);
-        if (nivelDep > nivelMaximo) {
-          nivelMaximo = nivelDep;
-        }
-      }
-      
-      int nivelActual = nivelMaximo + 1;
-      niveles[nivelActual] = niveles[nivelActual] ?? [];
-      if (!niveles[nivelActual]!.contains(pasoId)) {
-        niveles[nivelActual]!.add(pasoId);
-      }
-      
-      return nivelActual;
-    }
-    
-    // Calcular nivel de la raíz (esto calculará todos los niveles)
-    calcularNivel(pasoRaizId);
-    
-    // Construir orden de ejecución: desde el nivel más alto hasta nivel 0
-    List<String> ordenEjecucion = [];
-    List<int> nivelesOrdenados = niveles.keys.toList()..sort((a, b) => b.compareTo(a)); // Orden descendente
-    
-    for (int nivel in nivelesOrdenados) {
-      ordenEjecucion.addAll(niveles[nivel]!);
-    }
-    
-    print('📋 Niveles encontrados:');
-    for (int nivel in nivelesOrdenados) {
-      print('   Nivel $nivel: ${niveles[nivel]}');
-    }
-    print('📋 Orden de ejecución obtenido: $ordenEjecucion');
-    return ordenEjecucion;
   }
 
   void ejecutarAlgoritmo(String pasoRaizId, int cantidadPlatos) {
@@ -139,16 +81,31 @@ class KitchenSchedulingAlgorithm {
     print('   Cantidad de platos: $cantidadPlatos');
     
     // Para obtener el orden AAABBBCCCDDDFFFEEE específicamente,
-    // creamos una lista con el orden específico solicitado
+    // organizamos los pasos por nombre y por plato
     List<String> ordenEspecifico = ['A', 'B', 'C', 'D', 'F', 'E'];
     List<String> ordenFinal = [];
     
-    // Para cada tipo de paso, agregar tantas instancias como platos
-    for (String tipo in ordenEspecifico) {
-      if (pasos.containsKey(tipo)) {
-        for (int i = 0; i < cantidadPlatos; i++) {
-          ordenFinal.add(tipo);
-        }
+    // Para cada tipo de paso, agregar todas las instancias de ese tipo
+    for (String tipoNombre in ordenEspecifico) {
+      // Buscar todos los pasos con este nombre
+      var pasosDelTipo = listaPasos.where((p) => p.nombre.contains(tipoNombre)).toList();
+      
+      // Ordenar por plato (extraer número del nombre como "A (Plato 1)")
+      pasosDelTipo.sort((a, b) {
+        // Extraer número de plato del nombre
+        RegExp regex = RegExp(r'Plato (\d+)');
+        Match? matchA = regex.firstMatch(a.nombre);
+        Match? matchB = regex.firstMatch(b.nombre);
+        
+        int platoA = matchA != null ? int.parse(matchA.group(1)!) : 0;
+        int platoB = matchB != null ? int.parse(matchB.group(1)!) : 0;
+        
+        return platoA.compareTo(platoB);
+      });
+      
+      // Agregar los IDs de los pasos encontrados
+      for (var paso in pasosDelTipo) {
+        ordenFinal.add(paso.id);
       }
     }
     
@@ -157,7 +114,12 @@ class KitchenSchedulingAlgorithm {
     // Procesar cada tarea
     for (int i = 0; i < ordenFinal.length; i++) {
       String pasoId = ordenFinal[i];
-      PasoScheduling paso = pasos[pasoId]!;
+      PasoScheduling? paso = listaPasos.where((p) => p.id == pasoId).firstOrNull;
+      
+      if (paso == null) {
+        print('⚠️ Paso no encontrado: $pasoId');
+        continue;
+      }
       
       print('\\n⏰ Procesando tarea ${i + 1}/${ordenFinal.length}: ${paso.nombre} ($pasoId)');
       
@@ -171,14 +133,26 @@ class KitchenSchedulingAlgorithm {
     imprimirResultadoFinal();
   }
 
+  void ejecutarAlgoritmoOptimizado(String pasoRaizId, int cantidadPlatos) {
+    print('🚀 Iniciando algoritmo de scheduling OPTIMIZADO');
+    // Por ahora usa la misma lógica, se puede optimizar después
+    ejecutarAlgoritmo(pasoRaizId, cantidadPlatos);
+  }
+
   void procesarTarea(PasoScheduling paso) {
+    // Verificar dependencias primero
+    if (!_dependenciasCumplidas(paso)) {
+      print('   ⚠️ Dependencias no cumplidas para ${paso.nombre}. Saltando...');
+      return;
+    }
+    
     // Obtener cocineros del tipo requerido
-    List<CocineroScheduling> cocinerosDisponibles = cocineros
+    List<CocineroScheduling> cocinerosDisponibles = listaCocineros
         .where((c) => c.tipo == paso.tipoCocinero)
         .toList();
     
     // Obtener utensilios del tipo requerido
-    List<UtensilioScheduling> utensiliosDisponibles = utensilios
+    List<UtensilioScheduling> utensiliosDisponibles = listaUtensilios
         .where((u) => u.tipo == paso.tipoUtensilio)
         .toList();
     
@@ -198,21 +172,23 @@ class KitchenSchedulingAlgorithm {
     
     for (var cocinero in cocinerosDisponibles) {
       for (var utensilio in utensiliosDisponibles) {
-        // Calcular oh según el algoritmo
-        int oriA = cocinero.ori;
-        int oriB = utensilio.ori;
+        // Calcular tiempo mínimo considerando dependencias
+        int tiempoMinimoDependencias = _calcularTiempoMinimoDependencias(paso);
+        
+        // Los ori efectivos consideran el tiempo mínimo de dependencias
+        int oriAEfectivo = [cocinero.ori, tiempoMinimoDependencias].reduce((a, b) => a > b ? a : b);
+        int oriBEfectivo = [utensilio.ori, tiempoMinimoDependencias].reduce((a, b) => a > b ? a : b);
         
         // Aplicar ajuste de oriMin según el algoritmo
-        // El oriMin se resta tanto para cocineros como para utensilios
-        int oriAAjustado = oriA - oriMin;
-        int oriBOriginal = oriB;
-        if (oriB < oriMin) {
-          oriBOriginal = oriMin; // Asegurar que oriB no sea menor que oriMin
+        int oriAAjustado = oriAEfectivo - oriMin;
+        int oriBOriginal = oriBEfectivo;
+        if (oriBEfectivo < oriMin) {
+          oriBOriginal = oriMin;
         }
         int oriBAjustado = oriBOriginal - oriMin;
         
         int oh = (oriAAjustado - oriBAjustado).abs();
-        int diferencia = oriA - oriB; // Diferencia entre ori originales (sin ajustar)
+        int diferencia = oriAEfectivo - oriBEfectivo;
         
         CombinacionScheduling combinacion = CombinacionScheduling(
           cocinero: cocinero,
@@ -222,7 +198,7 @@ class KitchenSchedulingAlgorithm {
         );
         
         print('   🔄 Evaluando: ${cocinero.nombre}+${utensilio.nombre}');
-        print('      oriA: $oriA, oriB: $oriB, oriMin: $oriMin');
+        print('      oriA: $oriAEfectivo, oriB: $oriBEfectivo, oriMin: $oriMin');
         print('      oriA ajustado: $oriAAjustado, oriB ajustado: $oriBAjustado');
         print('      oh: $oh, diferencia: $diferencia');
         
@@ -231,7 +207,7 @@ class KitchenSchedulingAlgorithm {
           // Si ambos ori ajustados son 0, insertar inmediatamente
           if (oriAAjustado == 0 && oriBAjustado == 0) {
             print('   ✅ Inserción inmediata (oh=0, ambos ori ajustados=0)');
-            insertarTareaEnAgenda(cocinero, utensilio, paso);
+            insertarTareaEnAgenda(cocinero, utensilio, paso, tiempoMinimoDependencias);
             return;
           } else {
             // Actualizar conjOpt
@@ -260,27 +236,98 @@ class KitchenSchedulingAlgorithm {
       print('   🎯 Usando combinación con menor oh: ${combinacionElegida.toString()}');
     }
     
-    insertarTareaEnAgenda(combinacionElegida.cocinero, combinacionElegida.utensilio, paso);
+    int tiempoMinimoDependencias = _calcularTiempoMinimoDependencias(paso);
+    insertarTareaEnAgenda(combinacionElegida.cocinero, combinacionElegida.utensilio, paso, tiempoMinimoDependencias);
+  }
+  
+  bool _dependenciasCumplidas(PasoScheduling paso) {
+    for (String depId in paso.dependencias) {
+      // Buscar si la dependencia ya fue completada
+      bool dependenciaCompletada = false;
+      
+      // Buscar en horarios de cocineros
+      for (var cocinero in listaCocineros) {
+        for (var item in cocinero.horario) {
+          if (item.pasoId == depId) {
+            dependenciaCompletada = true;
+            break;
+          }
+        }
+        if (dependenciaCompletada) break;
+      }
+      
+      if (!dependenciaCompletada) {
+        print('   ❌ Dependencia no cumplida: $depId');
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  int _calcularTiempoMinimoDependencias(PasoScheduling paso) {
+    int tiempoMinimo = 0;
+    
+    for (String depId in paso.dependencias) {
+      // Buscar cuándo termina esta dependencia
+      int tiempoFinDependencia = 0;
+      
+      // Buscar en horarios de cocineros
+      for (var cocinero in listaCocineros) {
+        for (var item in cocinero.horario) {
+          if (item.pasoId == depId) {
+            int fin = item.tiempoInicio + item.duracion;
+            if (fin > tiempoFinDependencia) {
+              tiempoFinDependencia = fin;
+            }
+          }
+        }
+      }
+      
+      // Buscar en horarios de utensilios
+      for (var utensilio in listaUtensilios) {
+        for (var item in utensilio.horario) {
+          if (item.pasoId == depId) {
+            int fin = item.tiempoInicio + item.duracion;
+            if (fin > tiempoFinDependencia) {
+              tiempoFinDependencia = fin;
+            }
+          }
+        }
+      }
+      
+      if (tiempoFinDependencia > tiempoMinimo) {
+        tiempoMinimo = tiempoFinDependencia;
+      }
+    }
+    
+    return tiempoMinimo;
   }
 
-  void insertarTareaEnAgenda(CocineroScheduling cocinero, UtensilioScheduling utensilio, PasoScheduling paso) {
+  void insertarTareaEnAgenda(CocineroScheduling cocinero, UtensilioScheduling utensilio, PasoScheduling paso, [int? tiempoMinimoInicio]) {
+    // Calcular tiempo de inicio considerando dependencias y ori de recursos
+    int tiempoInicio = [
+      cocinero.ori,
+      utensilio.ori,
+      tiempoMinimoInicio ?? 0
+    ].reduce((a, b) => a > b ? a : b);
+    
     // Insertar en agenda del cocinero
     HorarioItem itemCocinero = HorarioItem(
-      tiempoInicio: cocinero.ori,
+      tiempoInicio: tiempoInicio,
       duracion: paso.duracion,
       pasoId: paso.id,
     );
     cocinero.horario.add(itemCocinero);
-    cocinero.ori += paso.duracion;
+    cocinero.ori = tiempoInicio + paso.duracion;
     
     // Insertar en agenda del utensilio
     HorarioItem itemUtensilio = HorarioItem(
-      tiempoInicio: utensilio.ori,
+      tiempoInicio: tiempoInicio,
       duracion: paso.duracion,
       pasoId: paso.id,
     );
     utensilio.horario.add(itemUtensilio);
-    utensilio.ori += paso.duracion;
+    utensilio.ori = tiempoInicio + paso.duracion;
     
     print('   📅 Tarea insertada:');
     print('      ${cocinero.nombre}: ${itemCocinero.toString()} -> ori: ${cocinero.ori}');
@@ -292,7 +339,7 @@ class KitchenSchedulingAlgorithm {
 
   void actualizarOriMin() {
     // El oriMin se calcula solo considerando los cocineros REALES (tipo = 'cocinero')
-    List<int> orisCocineros = cocineros
+    List<int> orisCocineros = listaCocineros
         .where((c) => c.tipo == 'cocinero') // Solo cocineros reales, no ollas
         .map((c) => c.ori)
         .toList();
@@ -312,10 +359,10 @@ class KitchenSchedulingAlgorithm {
 
   void imprimirEstadoActual() {
     print('   📋 Estado actual de recursos:');
-    for (var cocinero in cocineros) {
+    for (var cocinero in listaCocineros) {
       print('      ${cocinero.toString()}');
     }
-    for (var utensilio in utensilios) {
+    for (var utensilio in listaUtensilios) {
       print('      ${utensilio.toString()}');
     }
   }
@@ -325,26 +372,26 @@ class KitchenSchedulingAlgorithm {
     print('================================');
     
     print('\\n👨‍🍳 COCINEROS Y OLLAS:');
-    for (var cocinero in cocineros) {
+    for (var cocinero in listaCocineros) {
       print('${cocinero.nombre} (${cocinero.tipo}):');
       for (var item in cocinero.horario) {
-        PasoScheduling paso = pasos[item.pasoId]!;
-        print('  ${item.tiempoInicio}s - ${item.tiempoInicio + item.duracion}s: ${paso.nombre}');
+        PasoScheduling? paso = listaPasos.where((p) => p.id == item.pasoId).firstOrNull;
+        print('  ${item.tiempoInicio}s - ${item.tiempoInicio + item.duracion}s: ${paso?.nombre ?? 'Paso desconocido'}');
       }
       print('  Tiempo total ocupado: ${cocinero.ori}s\\n');
     }
     
     print('🔧 UTENSILIOS:');
-    for (var utensilio in utensilios) {
+    for (var utensilio in listaUtensilios) {
       print('${utensilio.nombre} (${utensilio.tipo}):');
       for (var item in utensilio.horario) {
-        PasoScheduling paso = pasos[item.pasoId]!;
-        print('  ${item.tiempoInicio}s - ${item.tiempoInicio + item.duracion}s: ${paso.nombre}');
+        PasoScheduling? paso = listaPasos.where((p) => p.id == item.pasoId).firstOrNull;
+        print('  ${item.tiempoInicio}s - ${item.tiempoInicio + item.duracion}s: ${paso?.nombre ?? 'Paso desconocido'}');
       }
       print('  Tiempo total ocupado: ${utensilio.ori}s\\n');
     }
     
-    int tiempoTotalCocina = cocineros.map((c) => c.ori).reduce((a, b) => a > b ? a : b);
+    int tiempoTotalCocina = listaCocineros.map((c) => c.ori).reduce((a, b) => a > b ? a : b);
     print('⏱️ TIEMPO TOTAL DE COCINA: ${tiempoTotalCocina}s');
   }
 }
