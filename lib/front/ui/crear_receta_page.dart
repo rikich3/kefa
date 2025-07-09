@@ -320,6 +320,30 @@ class _PasoDialogState extends State<_PasoDialog> {
     }
   }
 
+  List<FilterChip> functionsToFilterChip(List<String> functions){
+    List<FilterChip> chips = [];
+    for(var i in functions){
+      chips.add(FilterChip(
+        label: Text(i),
+        selected: _selectedTrabajadores.contains(i),
+        onSelected: (selected) {
+          setState(() {
+            if (selected) {
+              _selectedTrabajadores.add(i);
+            } else {
+              _selectedTrabajadores.remove(i);
+            }
+          });
+        },
+      ));
+    }
+    return chips;
+  }
+
+  List<String> listToSet(List<String> functions) {
+    return functions.toSet().toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -382,22 +406,12 @@ class _PasoDialogState extends State<_PasoDialog> {
                   builder: (context, workersProvider, child) {
                     return Wrap(
                       spacing: 8,
-                      children: workersProvider.workers.map((worker) {
-                        final isSelected = _selectedTrabajadores.contains(worker.funcion);
-                        return FilterChip(
-                          label: Text(worker.funcion),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              if (selected) {
-                                _selectedTrabajadores.add(worker.funcion);
-                              } else {
-                                _selectedTrabajadores.remove(worker.funcion);
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
+                        children: functionsToFilterChip(
+                        listToSet(
+                          workersProvider.workers.map((w) => w.funcion).toList()
+                        )
+                        )
+                      //functionsToFilterChips(workersTochipsFunctions(workersProvider.workers))
                     );
                   },
                 ),

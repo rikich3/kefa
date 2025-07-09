@@ -497,7 +497,7 @@ class _ManageTabState extends State<ManageTab> {
                               children: [
                                 Text(receta.descripcion),
                                 Text(
-                                  'Tiempo total: ${receta.tiempoTotalSegundos ~/ 60}:${(receta.tiempoTotalSegundos % 60).toString().padLeft(2, '0')} • ${receta.pasos.length} pasos',
+                                  '${receta.pasos.length} pasos',
                                   style: textTheme.bodySmall,
                                 ),
                               ],
