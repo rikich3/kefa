@@ -1,9 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import '../lib/back/algorithms/scheduling_dinamico_algorithm.dart';
-import '../lib/back/algorithms/scheduling_dinamico_algorithm_optimizado.dart';
+// import '../lib/back/algorithms/scheduling_dinamico_algorithm_optimizado_nuevo.dart'; // Unused
 import '../lib/back/dataModels/paso_scheduling.dart';
 import '../lib/back/dataModels/cocinero_scheduling.dart';
 import '../lib/back/dataModels/utensilio_scheduling.dart';
+import '../lib/back/dataModels/estado_scheduling.dart';
 import 'dart:math';
 
 void main() {
@@ -83,7 +84,7 @@ void main() {
         resultados[pasosReales] = {
           'makespan': makespan,
           'tiempo': tiempo,
-          'eficiencia': _calcularEficienciaTeórica(pasosReales, caso.cocineros.length),
+          'eficiencia': _calcularEficienciaTeorica(pasosReales, caso.cocineros.length),
         };
         
         print('   📊 ${pasosReales} pasos → ${makespan}s makespan, ${tiempo}ms cálculo');
@@ -229,8 +230,8 @@ _CasoTest _generarCasoParametrizado(int numPasosObjetivo) {
   return _CasoTest(pasos, cocineros, utensilios);
 }
 
-double _calcularEficienciaTeórica(int numPasos, int numCocineros) {
-  // Cálculo teórico simplificado: duración promedio * pasos / cocineros
+double _calcularEficienciaTeorica(int numPasos, int numCocineros) {
+  // Calculo teorico simplificado: duracion promedio * pasos / cocineros
   const duracionPromedio = 150; // segundos
   return (duracionPromedio * numPasos / numCocineros).toDouble();
 }
@@ -241,13 +242,13 @@ void _analizarUtilizacionDetallada(SchedulingDinamicoAlgorithm algoritmo) {
   final estado = algoritmo.estadoActual!;
   
   for (final cocinero in estado.cocineros) {
-    final tiempoTrabajo = cocinero.horario.fold(0, (sum, item) => sum + item.duracion);
+    final tiempoTrabajo = cocinero.horario.fold<int>(0, (sum, item) => sum + item.duracion);
     final utilizacion = (tiempoTrabajo / estado.tiempoActual * 100);
     print('👨‍🍳 ${cocinero.nombre}: ${utilizacion.toStringAsFixed(1)}% (${tiempoTrabajo}s de ${estado.tiempoActual}s)');
   }
   
   for (final utensilio in estado.utensilios) {
-    final tiempoUso = utensilio.horario.fold(0, (sum, item) => sum + item.duracion);
+    final tiempoUso = utensilio.horario.fold<int>(0, (sum, item) => sum + item.duracion);
     final utilizacion = (tiempoUso / estado.tiempoActual * 100);
     print('🔧 ${utensilio.nombre}: ${utilizacion.toStringAsFixed(1)}% (${tiempoUso}s de ${estado.tiempoActual}s)');
   }
@@ -270,8 +271,14 @@ void _verificarCompletitudAsignacion(SchedulingDinamicoAlgorithm algoritmo) {
 double _calcularUtilizacion(List<dynamic> recursos, int tiempoTotal) {
   if (recursos.isEmpty || tiempoTotal == 0) return 0.0;
   
-  final tiempoTotalUso = recursos.fold(0, (sum, recurso) => 
-    sum + recurso.horario.fold(0, (subSum, item) => subSum + item.duracion));
+  int tiempoTotalUso = 0;
+  for (var recurso in recursos) {
+    if (recurso.horario != null) {
+      for (var item in recurso.horario) {
+        tiempoTotalUso += ((item.duracion as num?)?.toInt() ?? 0);
+      }
+    }
+  }
   
   return (tiempoTotalUso / (recursos.length * tiempoTotal) * 100);
 }
@@ -283,13 +290,13 @@ void _analizarDistribucionTrabajo(SchedulingDinamicoAlgorithm algoritmo) {
   final trabajoPorCocinero = <String, int>{};
   
   for (final cocinero in estado.cocineros) {
-    trabajoPorCocinero[cocinero.id] = cocinero.horario.fold(0, (sum, item) => sum + item.duracion);
+    trabajoPorCocinero[cocinero.id] = cocinero.horario.fold<int>(0, (sum, item) => sum + item.duracion);
   }
   
   final trabajos = trabajoPorCocinero.values.toList()..sort();
   final min = trabajos.first;
   final max = trabajos.last;
-  final promedio = trabajos.fold(0, (sum, t) => sum + t) / trabajos.length;
+  final promedio = trabajos.fold<int>(0, (sum, t) => sum + t) / trabajos.length;
   
   print('   📈 Trabajo mínimo: ${min}s');
   print('   📈 Trabajo máximo: ${max}s');

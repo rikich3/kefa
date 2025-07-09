@@ -1,6 +1,6 @@
-import 'dart:math';
+// import 'dart:math'; // Unused
 import 'package:flutter_test/flutter_test.dart';
-import '../lib/back/algorithms/scheduling_dinamico_algorithm_optimizado_fixed.dart';
+import '../lib/back/algorithms/scheduling_dinamico_algorithm_optimizado_nuevo.dart';
 import '../lib/back/dataModels/paso_scheduling.dart';
 import '../lib/back/dataModels/cocinero_scheduling.dart';
 import '../lib/back/dataModels/utensilio_scheduling.dart';
@@ -148,11 +148,11 @@ void main() {
       for (final paso in algoritmo.estadoActual!.pasosCompletados) {
         if (paso.tiempoInicio != null && paso.tiempoFin != null) {
           eventos.add({
-            'tiempo': int.parse(paso.cocineroAsignado!),
+            'tiempo': paso.tiempoInicio!,
             'tipo': 'inicio',
           });
           eventos.add({
-            'tiempo': int.parse(paso.utensilioAsignado!),
+            'tiempo': paso.tiempoFin!,
             'tipo': 'fin',
           });
         }
@@ -175,7 +175,7 @@ void main() {
       // Análisis de eficiencia
       final makespan = algoritmo.estadoActual!.tiempoActual;
       final totalTrabajo = algoritmo.estadoActual!.pasosCompletados
-          .map((p) => int.parse(p.utensilioAsignado!) - int.parse(p.cocineroAsignado!))
+          .map((p) => (p.tiempoFin ?? 0) - (p.tiempoInicio ?? 0))
           .reduce((a, b) => a + b);
       final eficiencia = totalTrabajo / (makespan * cocineros.length) * 100;
       

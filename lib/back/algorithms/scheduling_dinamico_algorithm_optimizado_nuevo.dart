@@ -22,6 +22,9 @@ class SchedulingDinamicoAlgorithmOptimizado {
   /// Getter para acceder al estado actual
   EstadoScheduling? get estadoActual => _estadoActual;
 
+  /// Getter para acceder a los logs de eventos
+  List<String> get logs => _logEventos;
+
   /// Debug logging
   void _log(String mensaje) {
     if (_debugMode) {
@@ -65,7 +68,7 @@ class SchedulingDinamicoAlgorithmOptimizado {
     _calcularCaminosCriticos(pasosDinamicos);
     
     // Mostrar pasos disponibles inicialmente
-    final disponibles = pasosDinamicos.where((p) => p.estado == EstadoPaso.disponible).toList();
+    // final disponibles = pasosDinamicos.where((p) => p.estado == EstadoPaso.disponible).toList(); // Unused variable
   }
 
   /// Calcula los caminos críticos del proyecto
@@ -95,8 +98,18 @@ class SchedulingDinamicoAlgorithmOptimizado {
     }
   }
 
-  void _calcularCaminoCriticoHaciaAtras(PasoSchedulingDinamico paso, List<PasoSchedulingDinamico> todosPasos) {
+  void _calcularCaminoCriticoHaciaAtras(PasoSchedulingDinamico paso, List<PasoSchedulingDinamico> todosPasos, [Set<String>? visitados]) {
+    visitados ??= <String>{};
+    
+    // Prevenir ciclos infinitos
+    if (visitados.contains(paso.id)) {
+      _impactoEnMakespan[paso.id] = paso.duracion.toDouble();
+      return;
+    }
+    
     if (_impactoEnMakespan.containsKey(paso.id)) return;
+    
+    visitados.add(paso.id);
 
     // Calcular impacto inicial del paso
     double impacto = paso.duracion.toDouble();
@@ -108,13 +121,18 @@ class SchedulingDinamicoAlgorithmOptimizado {
       String? dependenciaCritica;
 
       for (final depId in paso.dependenciasOriginales) {
-        final dependencia = todosPasos.firstWhere((p) => p.id == depId);
-        _calcularCaminoCriticoHaciaAtras(dependencia, todosPasos);
+        try {
+          final dependencia = todosPasos.firstWhere((p) => p.id == depId);
+          _calcularCaminoCriticoHaciaAtras(dependencia, todosPasos, Set.from(visitados));
 
-        final impactoDependencia = _impactoEnMakespan[depId]!;
-        if (impactoDependencia > maxDependenciaImpacto) {
-          maxDependenciaImpacto = impactoDependencia;
-          dependenciaCritica = depId;
+          final impactoDependencia = _impactoEnMakespan[depId] ?? 0.0;
+          if (impactoDependencia > maxDependenciaImpacto) {
+            maxDependenciaImpacto = impactoDependencia;
+            dependenciaCritica = depId;
+          }
+        } catch (e) {
+          // Si no se encuentra la dependencia, continuar sin ella
+          continue;
         }
       }
 
@@ -178,10 +196,10 @@ class SchedulingDinamicoAlgorithmOptimizado {
     }
 
     // Verificar resultado
-    final pasosCompletados = _estadoActual!.todosPasos
-        .where((p) => p.estado == EstadoPaso.completado)
-        .length;
-    final totalPasos = _estadoActual!.todosPasos.length;
+    // final pasosCompletados = _estadoActual!.todosPasos
+    //     .where((p) => p.estado == EstadoPaso.completado)
+    //     .length; // Unused variable
+    // final totalPasos = _estadoActual!.todosPasos.length; // Unused variable
 
     return _logEventos;
   }
@@ -328,5 +346,21 @@ class SchedulingDinamicoAlgorithmOptimizado {
     paso.utensilioAsignado = utensilioDisponible.id;
 
     return true;
+  }
+
+  /// Configurar el modo debug
+  void setDebugMode(bool enabled) {
+    _debugMode = enabled;
+  }
+
+  /// Método para compatibilidad con tests que esperan este nombre
+  EstadoScheduling? ejecutarCompletoOptimizado({
+    required List<PasoScheduling> pasos,
+    required List<CocineroScheduling> cocineros,
+    required List<UtensilioScheduling> utensilios,
+  }) {
+    inicializar(pasos: pasos, cocineros: cocineros, utensilios: utensilios);
+    ejecutarCompleto();
+    return _estadoActual;
   }
 }

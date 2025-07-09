@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import '../lib/back/algorithms/scheduling_dinamico_algorithm.dart';
-import '../lib/back/algorithms/scheduling_dinamico_algorithm_optimizado.dart';
+import '../lib/back/algorithms/scheduling_dinamico_algorithm_optimizado_nuevo.dart';
 import '../lib/back/dataModels/paso_scheduling.dart';
 import '../lib/back/dataModels/cocinero_scheduling.dart';
 import '../lib/back/dataModels/utensilio_scheduling.dart';

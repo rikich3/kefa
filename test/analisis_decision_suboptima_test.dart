@@ -85,7 +85,8 @@ void main() {
       }
       print('Resultado: ${tiempoCorrecto.last['tiempo']}');
       
-      final mejora = tiempoIncorrecto.last['tiempo'] - tiempoCorrecto.last['tiempo'];
+      final mejora = int.parse(tiempoIncorrecto.last['tiempo'].toString().substring(1)) - 
+                     int.parse(tiempoCorrecto.last['tiempo'].toString().substring(1));
       print('\n🏆 MEJORA OBTENIDA: ${mejora}s');
       
       expect(mejora, equals(180), reason: 'La mejora debería ser exactamente 180s');

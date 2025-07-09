@@ -3,11 +3,11 @@ import 'package:provider/provider.dart'; // <-- Importar Provider
 import 'front/state/ingredientes_provider.dart'; // <-- Importar tu Provider
 import 'back/dataModels/ingredientes.dart'; // <-- Importar el modelo Ingrediente (necesario para la lista)
 import 'front/state/workers_provider.dart'; // <-- Importar tu Provider
-import 'back/dataModels/worker.dart'; // <-- Importar el modelo Ingrediente (necesario para la lista)
+// import 'back/dataModels/worker.dart'; // Unused
 import 'front/state/instrumentos_provider.dart'; // <-- Importar tu Provider
-import 'back/dataModels/instrumentos.dart'; // <-- Importar el modelo Ingrediente (necesario para la lista)
-import 'front/state/receta_provider.dart'; // <-- Importar Receta Provider
-import 'back/dataModels/receta.dart'; // <-- Importar el modelo Receta
+// import 'back/dataModels/instrumentos.dart'; // Unused
+// import 'front/state/receta_provider.dart'; // Unused
+// import 'back/dataModels/receta.dart'; // Unused
 
 
 // Importar las pantallas de destino

@@ -13,7 +13,6 @@ class SchedulingDinamicoAlgorithmUltraOptimizado {
   // ESTRUCTURAS OPTIMIZADAS PARA O(n log n)
   late Map<String, SplayTreeSet<CocineroScheduling>> _cocinerosPorTipo;
   late Map<String, SplayTreeSet<UtensilioScheduling>> _utensiliosPorTipo;
-  late Map<String, List<String>> _caminosCriticos;
   late Set<String> _pasosEnCaminoCritico;
   
   // CACHE PARA EVITAR RECÁLCULOS
@@ -95,7 +94,6 @@ class SchedulingDinamicoAlgorithmUltraOptimizado {
 
   /// OPTIMIZACIÓN 2: Algoritmo eficiente de camino crítico O(n log n)
   void _calcularCaminosCriticosEficiente() {
-    _caminosCriticos = {};
     _pasosEnCaminoCritico = {};
     
     // Usar topological sort + longest path para encontrar caminos críticos

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../back/dataModels/receta.dart';
 import '../state/receta_provider.dart';
 import 'crear_receta_nueva_page.dart';
 

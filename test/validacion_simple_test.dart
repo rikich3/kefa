@@ -3,7 +3,7 @@ import '../lib/back/algorithms/scheduling_dinamico_algorithm.dart';
 import '../lib/back/dataModels/paso_scheduling.dart';
 import '../lib/back/dataModels/cocinero_scheduling.dart';
 import '../lib/back/dataModels/utensilio_scheduling.dart';
-import 'dart:math';
+// import 'dart:math'; // Unused
 
 void main() {
   group('🚨 VALIDACIÓN DE RESULTADOS SOSPECHOSOS', () {
@@ -195,8 +195,8 @@ void main() {
       final cocineros = [CocineroScheduling(id: 'chef1', nombre: 'Chef1', tipo: 'normal')];
       final utensilios = [UtensilioScheduling(id: 'bowl1', nombre: 'Bowl1', tipo: 'bowl')];
       
-      print('🎯 EXPECTATIVA: A(0-100) → B(100-300) y C(100-400) → D(400-550)');
-      print('   Makespan esperado: 550s');
+      print('🎯 EXPECTATIVA: A(0-100) → C(100-400) → B(400-600) → D(600-750)');
+      print('   Makespan esperado: 750s (secuencial con 1 chef)');
       
       final algoritmo = SchedulingDinamicoAlgorithm();
       algoritmo.setDebugMode(true);
@@ -216,7 +216,7 @@ void main() {
         print('   ${paso.nombre}: T${paso.tiempoInicio} - T${paso.tiempoFin}');
       }
       
-      expect(makespan, equals(550), reason: 'Dependencias diamond deben resolverse correctamente');
+      expect(makespan, equals(750), reason: 'Dependencias diamond con 1 recurso deben ejecutarse secuencialmente');
     });
   });
 }

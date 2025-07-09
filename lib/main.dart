@@ -13,6 +13,7 @@ import 'back/dataModels/cocinero_scheduling.dart';
 import 'back/dataModels/utensilio_scheduling.dart';
 import 'back/dataModels/paso_scheduling.dart';
 import 'back/dataModels/estado_scheduling.dart';
+import 'back/dataModels/tarea_asignada.dart';
 
 // Importar data sources
 import 'back/data_sources/hive/hive_ingredientes_data_source.dart';
@@ -28,6 +29,7 @@ import 'back/repositories/instrumentos_repository.impl.dart';
 import 'back/repositories/workers_repository_impl.dart';
 import 'back/repositories/receta_repository_impl.dart';
 import 'back/repositories/paso_repository_impl.dart';
+import 'back/repositories/tarea_asignada_repository.dart';
 
 // Importar providers
 import 'front/state/ingredientes_provider.dart';
@@ -35,6 +37,7 @@ import 'front/state/instrumentos_provider.dart';
 import 'front/state/workers_provider.dart';
 import 'front/state/receta_provider.dart';
 import 'front/state/paso_provider.dart';
+import 'front/state/tarea_asignada_provider.dart';
 
 import 'home_page.dart';
 
@@ -59,6 +62,7 @@ void main() async {
   Hive.registerAdapter(EstadoPasoAdapter());
   Hive.registerAdapter(PasoSchedulingDinamicoAdapter());
   Hive.registerAdapter(EstadoSchedulingAdapter());
+  Hive.registerAdapter(TareaAsignadaAdapter());
   
   // Test de persistencia
   print('🔬 Ejecutando test de persistencia...');
@@ -108,6 +112,7 @@ class MyApp extends StatelessWidget {
     final RecetaRepositoryImpl recetaRepository = RecetaRepositoryImpl(hiveDataSource: hiveRecetaDataSource);
     final HivePasoDataSource hivePasoDataSource = HivePasoDataSource();
     final PasoRepositoryImpl pasoRepository = PasoRepositoryImpl(hiveDataSource: hivePasoDataSource);
+    final TareaAsignadaRepository tareaAsignadaRepository = TareaAsignadaRepository();
 
     // Imprimir información de inicio
     print('🚀 Iniciando aplicación Kefa');
@@ -140,6 +145,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) {
           print('🔄 Creando PasoProvider');
           return PasoProvider(pasoRepository: pasoRepository);
+        }),
+        ChangeNotifierProvider(create: (_) {
+          print('🔄 Creando TareaAsignadaProvider');
+          return TareaAsignadaProvider(repository: tareaAsignadaRepository);
         }),
         ],
       child: MaterialApp(

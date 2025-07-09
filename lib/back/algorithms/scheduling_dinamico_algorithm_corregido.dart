@@ -114,7 +114,7 @@ class SchedulingDinamicoAlgorithmCorregido {
           final completados = _estadoActual!.pasosCompletados.length;
           final disponibles = _estadoActual!.pasosDisponibles.length;
           final pendientes = _estadoActual!.pasosPendientes.length;
-          final faltantes = totalPasos - completados;
+          // final faltantes = totalPasos - completados; // Unused variable
           
           // Análisis detallado del deadlock
           final analisisDeadlock = _analizarDeadlock();

@@ -4,9 +4,11 @@ import 'front/state/receta_provider.dart';
 import 'front/state/paso_provider.dart';
 import 'front/state/workers_provider.dart';
 import 'front/state/instrumentos_provider.dart';
+import 'front/state/tarea_asignada_provider.dart';
 import 'back/dataModels/paso.dart';
 import 'back/dataModels/worker.dart';
 import 'back/dataModels/instrumentos.dart';
+import 'back/dataModels/tarea_asignada.dart';
 import 'back/dataModels/cocinero_scheduling.dart';
 import 'back/dataModels/utensilio_scheduling.dart';
 import 'back/dataModels/paso_scheduling.dart';
@@ -14,7 +16,8 @@ import 'back/dataModels/estado_scheduling.dart'; // Importamos PasoSchedulingDin
 import 'back/algorithms/kitchen_scheduling_algorithm.dart';
 import 'back/algorithms/scheduling_dinamico_algorithm.dart';
 import 'back/algorithms/scheduling_dinamico_algorithm_optimizado_nuevo.dart';
-import 'back/utils/iterable_extensions.dart'; // Added this import
+// import 'back/utils/iterable_extensions.dart'; // Unused
+import 'screens/cocineros_grid_screen.dart';
 
 class WorkTab extends StatefulWidget {
   const WorkTab({super.key});
@@ -493,8 +496,8 @@ class _WorkTabState extends State<WorkTab> {
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: Consumer4<RecetaProvider, PasoProvider, WorkersProvider, InstrumentosProvider>(
-        builder: (context, recetaProvider, pasoProvider, workersProvider, instrumentosProvider, child) {
+      child: Consumer5<RecetaProvider, PasoProvider, WorkersProvider, InstrumentosProvider, TareaAsignadaProvider>(
+        builder: (context, recetaProvider, pasoProvider, workersProvider, instrumentosProvider, tareasProvider, child) {
           return ListView(
             children: [
               // Título
@@ -695,7 +698,23 @@ class _WorkTabState extends State<WorkTab> {
                     padding: const EdgeInsets.all(16),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+                
+                // Botón para asignar tareas (aparece después de generar el plan)
+                if (_resultadoPlan != null) ...[
+                  FilledButton.icon(
+                    onPressed: _asignarTareasACocineros,
+                    icon: const Icon(Icons.assignment_add),
+                    label: const Text('Asignar Tareas a Cocineros'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      minimumSize: const Size(double.infinity, 48),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                
+                const SizedBox(height: 8),
               ],
 
               // Logs del proceso
@@ -779,10 +798,269 @@ class _WorkTabState extends State<WorkTab> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
+                
+                // Botones para gestión de tareas
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _borrarTodasLasAgendas,
+                        icon: const Icon(Icons.clear_all),
+                        label: const Text('Borrar Agendas'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.all(12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                
+                // Botón para visualizar tareas
+                FilledButton.icon(
+                  onPressed: _visualizarTareasAsignadas,
+                  icon: const Icon(Icons.visibility),
+                  label: const Text('Visualizar Tareas Asignadas a Cocineros'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                ),
               ],
             ],
           );
         },
+      ),
+    );
+  }
+
+  // Método para asignar tareas a los cocineros en la base de datos
+  void _asignarTareasACocineros() async {
+    if (_algoritmoOptimizado.estadoActual == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Primero debe generar un plan optimizado')),
+      );
+      return;
+    }
+
+    try {
+      print('📋 Iniciando asignación de tareas a cocineros...');
+      
+      final estado = _algoritmoOptimizado.estadoActual!;
+      final pasosCompletados = estado.pasosCompletados;
+      
+      if (pasosCompletados.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No hay tareas completadas para asignar')),
+        );
+        return;
+      }
+
+      // Mostrar indicador de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Asignando tareas...'),
+            ],
+          ),
+        ),
+      );
+
+      // Obtener el provider de tareas
+      final tareasProvider = Provider.of<TareaAsignadaProvider>(context, listen: false);
+      
+      // Crear lista de tareas asignadas
+      final tareasAsignadas = <TareaAsignada>[];
+      
+      // Organizar pasos por cocinero
+      final tareasPorCocinero = <String, List<PasoSchedulingDinamico>>{};
+      
+      for (final paso in pasosCompletados) {
+        final cocineroId = paso.cocineroAsignado ?? 'sin_asignar';
+        if (!tareasPorCocinero.containsKey(cocineroId)) {
+          tareasPorCocinero[cocineroId] = [];
+        }
+        tareasPorCocinero[cocineroId]!.add(paso);
+      }
+
+      print('📊 Tareas organizadas por cocinero:');
+      for (final entry in tareasPorCocinero.entries) {
+        print('   - ${entry.key}: ${entry.value.length} tareas');
+      }
+
+      // Crear TareaAsignada para cada paso
+      int ordenGlobal = 1;
+      
+      for (final entry in tareasPorCocinero.entries) {
+        final cocineroId = entry.key;
+        final tareasDelCocinero = entry.value;
+        
+        // Ordenar las tareas del cocinero por tiempo de inicio
+        tareasDelCocinero.sort((a, b) => (a.tiempoInicio ?? 0).compareTo(b.tiempoInicio ?? 0));
+        
+        int ordenLocal = 1;
+        
+        for (final paso in tareasDelCocinero) {
+          // Crear descripción detallada
+          final descripcion = 'Paso de cocina: ${paso.tipoCocinero} con ${paso.tipoUtensilio}';
+          
+          // Obtener utensilios requeridos
+          final utensiliosRequeridos = paso.utensilioAsignado != null 
+            ? [paso.utensilioAsignado!] 
+            : <String>[];
+
+          final tareaAsignada = TareaAsignada(
+            id: '${cocineroId}_${paso.id}_${DateTime.now().millisecondsSinceEpoch}',
+            cocineroId: cocineroId,
+            nombreTarea: paso.nombre,
+            descripcion: descripcion,
+            utensiliosRequeridos: utensiliosRequeridos,
+            tiempoInicioSegundos: paso.tiempoInicio ?? 0,
+            duracionSegundos: paso.duracion,
+            orden: ordenLocal,
+            fechaAsignacion: DateTime.now(),
+          );
+
+          tareasAsignadas.add(tareaAsignada);
+          
+          print('✅ Tarea creada: ${tareaAsignada.nombreTarea} para ${cocineroId} (T${ordenLocal})');
+          
+          ordenLocal++;
+          ordenGlobal++;
+        }
+      }
+
+      // Guardar todas las tareas en la base de datos
+      await tareasProvider.guardarTareas(tareasAsignadas);
+      
+      // Cerrar diálogo de carga
+      if (mounted) {
+        Navigator.of(context).pop();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ ${tareasAsignadas.length} tareas asignadas exitosamente a ${tareasPorCocinero.length} cocineros'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      
+      print('📋 Proceso de asignación completado exitosamente');
+      
+    } catch (e) {
+      // Cerrar diálogo de carga si está abierto
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      
+      print('❌ Error en asignación de tareas: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al asignar tareas: $e')),
+        );
+      }
+    }
+  }
+
+  // Método para borrar todas las agendas
+  void _borrarTodasLasAgendas() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmar eliminación'),
+          content: const Text('¿Está seguro que desea borrar todas las agendas de los cocineros?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _ejecutarBorradoAgendas();
+              },
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Borrar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _ejecutarBorradoAgendas() async {
+    try {
+      // Mostrar indicador de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Borrando agendas...'),
+            ],
+          ),
+        ),
+      );
+
+      // Obtener el provider de tareas
+      final tareasProvider = Provider.of<TareaAsignadaProvider>(context, listen: false);
+      
+      // Borrar todas las tareas
+      await tareasProvider.borrarTodasLasTareas();
+      
+      // Cerrar diálogo de carga
+      if (mounted) {
+        Navigator.of(context).pop();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Todas las agendas han sido borradas exitosamente'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      
+      print('🗑️ Todas las agendas han sido borradas de la base de datos');
+      
+    } catch (e) {
+      // Cerrar diálogo de carga si está abierto
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      
+      print('❌ Error al borrar agendas: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al borrar agendas: $e')),
+        );
+      }
+    }
+  }
+
+  // Método para navegar a la pantalla de grilla de cocineros
+  void _visualizarTareasAsignadas() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const CocinerosGridScreen(),
       ),
     );
   }
