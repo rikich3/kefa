@@ -12,12 +12,10 @@ import 'back/dataModels/tarea_asignada.dart';
 import 'back/dataModels/cocinero_scheduling.dart';
 import 'back/dataModels/utensilio_scheduling.dart';
 import 'back/dataModels/paso_scheduling.dart';
-import 'back/dataModels/estado_scheduling.dart'; // Importamos PasoSchedulingDinamico
-import 'back/algorithms/kitchen_scheduling_algorithm.dart';
-import 'back/algorithms/scheduling_dinamico_algorithm.dart';
-import 'back/algorithms/scheduling_dinamico_algorithm_optimizado_nuevo.dart';
-// import 'back/utils/iterable_extensions.dart'; // Unused
+import 'back/algorithms/scheduling_dinamico_algorithm_optimizado.dart';
+import 'back/dataModels/loteo_optimizer.dart';
 import 'screens/cocineros_grid_screen.dart';
+import 'back/dataModels/receta.dart';
 
 class WorkTab extends StatefulWidget {
   const WorkTab({super.key});
@@ -31,7 +29,7 @@ class _WorkTabState extends State<WorkTab> {
   bool _ejecutandoAlgoritmo = false;
   String? _resultadoPlan;
   List<String> _logsProceso = [];
-  final SchedulingDinamicoAlgorithmOptimizado _algoritmoOptimizado = SchedulingDinamicoAlgorithmOptimizado();
+  SchedulingDinamicoAlgorithmOptimizado? _algoritmoOptimizado;
 
   @override
   void initState() {
@@ -105,59 +103,6 @@ class _WorkTabState extends State<WorkTab> {
     return utensilios;
   }
 
-  List<PasoScheduling> _convertirPasosAScheduling(List<Paso> pasos, Map<String, int> recetasCantidades) {
-    final pasosScheduling = <PasoScheduling>[];
-    
-    print('🔍 CONVERSION DE PASOS - DEBUG:');
-    print('   Recetas y cantidades: $recetasCantidades');
-    print('   Total pasos disponibles: ${pasos.length}');
-    
-    for (final entry in recetasCantidades.entries) {
-      final recetaNombre = entry.key;
-      final cantidad = entry.value;
-      
-      print('   Procesando receta: "$recetaNombre" x$cantidad');
-      
-      // Obtener pasos de esta receta
-      final pasosReceta = pasos.where((p) => p.recetaId == recetaNombre).toList();
-      pasosReceta.sort((Paso a, Paso b) => a.orden.compareTo(b.orden));
-      
-      print('   Pasos encontrados para "$recetaNombre": ${pasosReceta.length}');
-      for (final paso in pasosReceta) {
-        print('     - Paso: "${paso.nombrePaso}" (ID: ${paso.id}, Orden: ${paso.orden})');
-        print('       Tipo cocinero: ${paso.tipoCocinero}, Tipo utensilio: ${paso.tipoUtensilio}');
-        print('       Duracion: ${paso.tiempoCoccionSegundos + paso.tiempoPreparacionSegundos}s');
-        print('       Dependencias: ${paso.dependencias}');
-      }
-      
-      // Crear instancias para cada plato
-      for (int i = 0; i < cantidad; i++) {
-        for (final paso in pasosReceta) {
-          // Crear ID único para cada instancia: nombrePaso_instancia
-          final idUnico = '${paso.nombrePaso}_plato${i + 1}';
-          
-          pasosScheduling.add(PasoScheduling(
-            id: idUnico, // Usar ID más descriptivo
-            nombre: '${paso.nombrePaso} (Plato ${i + 1})',
-            tipoCocinero: paso.tipoCocinero ?? 'cocinero',
-            tipoUtensilio: paso.tipoUtensilio ?? 'A', // Default a 'A' si no está definido
-            duracion: paso.tiempoCoccionSegundos + paso.tiempoPreparacionSegundos,
-            dependencias: _convertirDependencias(paso.dependencias ?? [], pasosReceta, i),
-          ));
-          
-          print('     Agregado: $idUnico');
-        }
-      }
-    }
-    
-    print('🔍 PASOS FINALES PARA SCHEDULING: ${pasosScheduling.length}');
-    for (final paso in pasosScheduling) {
-      print('   - ${paso.toString()}');
-    }
-    
-    return pasosScheduling;
-  }
-
   List<String> _convertirDependencias(List<String> dependenciasOriginales, List<Paso> pasosReceta, int numeroPlato) {
     final dependenciasConvertidas = <String>[];
     
@@ -212,133 +157,82 @@ class _WorkTabState extends State<WorkTab> {
       
       _logsProceso.add('🚀 Iniciando algoritmo de scheduling...');
       _logsProceso.add('📋 Recetas seleccionadas: ${_recetasSeleccionadas.toString()}');
+      _logsProceso.add('👨‍🍳 Cocineros: ${_recetasSeleccionadas.length}');
+      _logsProceso.add('🔧 Utensilios: ${_recetasSeleccionadas.length}');
+      _logsProceso.add('📝 Pasos totales: ${_recetasSeleccionadas.length}');
 
       // Obtener datos de providers
       final pasoProvider = Provider.of<PasoProvider>(context, listen: false);
       final workersProvider = Provider.of<WorkersProvider>(context, listen: false);
       final instrumentosProvider = Provider.of<InstrumentosProvider>(context, listen: false);
+      final recetaProvider = Provider.of<RecetaProvider>(context, listen: false);
 
-      // Convertir datos a formato de scheduling
-      final cocineros = _convertirWorkersACocineros(workersProvider.workers);
-      final utensilios = _convertirInstrumentosAUtensilios(instrumentosProvider.instrumentos);
-      final pasos = _convertirPasosAScheduling(pasoProvider.pasoEntries.map((e) => e.value).toList(), _recetasSeleccionadas);
-
-      print('👨‍🍳 Cocineros disponibles:');
-      for (final cocinero in cocineros) {
-        print('   - ${cocinero.toString()}');
+      // Obtener receta seleccionada (asumimos una receta para el ejemplo)
+      final recetaSeleccionadaId = _recetasSeleccionadas.keys.isNotEmpty ? _recetasSeleccionadas.keys.first : null;
+      final recetaEntries = recetaProvider.recetaEntries;
+      MapEntry<dynamic, Receta>? recetaEntrySeleccionada;
+      if (recetaSeleccionadaId != null) {
+        try {
+          recetaEntrySeleccionada = recetaEntries.firstWhere((r) => r.value.nombre == recetaSeleccionadaId);
+        } catch (_) {
+          recetaEntrySeleccionada = null;
+        }
       }
+      final recetaSeleccionada = recetaEntrySeleccionada?.value;
+      final pasos = pasoProvider.pasoEntries.map((e) => e.value).toList();
+      final workers = workersProvider.workers;
+      final instrumentos = instrumentosProvider.instrumentos;
+      final cantidadFinal = recetaSeleccionada != null ? recetaSeleccionada.cantidadPorciones.toDouble() : 1.0;
 
-      print('🔧 Utensilios disponibles:');
-      for (final utensilio in utensilios) {
-        print('   - ${utensilio.toString()}');
-      }
-
-      print('📝 Pasos a ejecutar:');
-      for (final paso in pasos) {
-        print('   - ${paso.toString()}');
-      }
-
-      _logsProceso.add('👨‍🍳 Cocineros: ${cocineros.length}');
-      _logsProceso.add('🔧 Utensilios: ${utensilios.length}');
-      _logsProceso.add('📝 Pasos totales: ${pasos.length}');
-
-      // Inicializar y ejecutar algoritmo optimizado
-      _algoritmoOptimizado.inicializar(
-        pasos: pasos,
-        cocineros: cocineros,
-        utensilios: utensilios,
-      );
-
-      _logsProceso.add('⚙️ Recursos inicializados');
-
-      // Ejecutar algoritmo optimizado
-      if (pasos.isNotEmpty) {
-        await Future.delayed(const Duration(milliseconds: 500)); // Simular procesamiento
-        
-        _logsProceso.add('🚀 Ejecutando algoritmo optimizado con detección de camino crítico...');
-        final logsEjecucion = _algoritmoOptimizado.ejecutarCompleto();
-        
-        _logsProceso.addAll(logsEjecucion);
-        _logsProceso.add('✅ Algoritmo ejecutado exitosamente');
-        
-        // Generar resultado visual
-        _resultadoPlan = _generarPlanVisualOptimizado(_algoritmoOptimizado);
-        
-        print('✅ ALGORITMO COMPLETADO');
-        print('=' * 50);
-      }
-
-    } catch (e) {
-      print('❌ Error en algoritmo: $e');
-      _logsProceso.add('❌ Error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al ejecutar algoritmo: $e')),
+      // Loteo óptimo de pasos
+      List<LoteoPasoResult> pasosLoteados = [];
+      if (recetaSeleccionada != null) {
+        pasosLoteados = LoteoOptimizer.optimizarLoteo(
+          receta: recetaSeleccionada,
+          pasos: pasos,
+          utensilios: instrumentos,
+          cantidadFinal: cantidadFinal,
         );
+        print('🟢 Pasos loteados:');
+        for (final loteo in pasosLoteados) {
+          print('Paso: \'${loteo.paso.nombrePaso}\', Lote: \'${loteo.lote}/${loteo.totalLotes}\', Cantidad: \'${loteo.cantidad}\', Utensilio: \'${loteo.utensilio?.nombre ?? '-'}\'');
+        }
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _ejecutandoAlgoritmo = false;
-        });
-      }
-    }
-  }
+      // --- LIMPIEZA FINAL DE CONVERSIÓN Y USO DE VARIABLES ---
+      final pasosScheduling = pasosLoteados.map((loteo) => PasoScheduling(
+        id: loteo.paso.id + '_lote${loteo.lote}',
+        nombre: loteo.paso.nombrePaso + (loteo.totalLotes > 1 ? ' (Lote ${loteo.lote}/${loteo.totalLotes})' : ''),
+        tipoCocinero: loteo.paso.tipoCocinero ?? 'cocinero',
+        tipoUtensilio: loteo.utensilio?.nombre ?? loteo.paso.tipoUtensilio ?? 'A',
+        duracion: (loteo.paso.tiempoCoccionSegundos + loteo.paso.tiempoPreparacionSegundos),
+        dependencias: (loteo.paso.dependencias ?? []),
+      )).toList();
 
-  /// Ejecutar el algoritmo optimizado que alcanza el makespan óptimo
-  void _ejecutarAlgoritmoOptimizado() async {
-    if (_recetasSeleccionadas.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Seleccione al menos una receta')),
-      );
-      return;
-    }
+      final cocineros = _convertirWorkersACocineros(workers);
+      final utensiliosScheduling = _convertirInstrumentosAUtensilios(instrumentos);
 
-    setState(() {
-      _ejecutandoAlgoritmo = true;
-      _resultadoPlan = null;
-      _logsProceso = [];
-    });
-
-    try {
-      print('🚀 INICIANDO ALGORITMO OPTIMIZADO DE SCHEDULING');
-      print('=' * 50);
-      
-      _logsProceso.add('🚀 Iniciando algoritmo optimizado de scheduling...');
-      _logsProceso.add('📋 Recetas seleccionadas: ${_recetasSeleccionadas.toString()}');
-
-      // Obtener datos de providers
-      final pasoProvider = Provider.of<PasoProvider>(context, listen: false);
-      final workersProvider = Provider.of<WorkersProvider>(context, listen: false);
-      final instrumentosProvider = Provider.of<InstrumentosProvider>(context, listen: false);
-
-      // Convertir datos a formato de scheduling
-      final cocineros = _convertirWorkersACocineros(workersProvider.workers);
-      final utensilios = _convertirInstrumentosAUtensilios(instrumentosProvider.instrumentos);
-      final pasos = _convertirPasosAScheduling(pasoProvider.pasoEntries.map((e) => e.value).toList(), _recetasSeleccionadas);
-
-      _logsProceso.add('👨‍🍳 Cocineros: ${cocineros.length}');
-      _logsProceso.add('🔧 Utensilios: ${utensilios.length}');
-      _logsProceso.add('📝 Pasos totales: ${pasos.length}');
+      _logsProceso.add('👨‍🍳 Cocineros: \'${cocineros.length}\'');
+      _logsProceso.add('🔧 Utensilios: \'${utensiliosScheduling.length}\'');
+      _logsProceso.add('📝 Pasos totales: \'${pasosScheduling.length}\'');
       
       // Inicializar algoritmo optimizado
-      _algoritmoOptimizado.inicializar(
-        pasos: pasos,
+      _algoritmoOptimizado = SchedulingDinamicoAlgorithmOptimizado(
+        pasos: pasosScheduling,
         cocineros: cocineros,
-        utensilios: utensilios,
+        utensilios: utensiliosScheduling,
       );
 
       _logsProceso.add('⚙️ Algoritmo optimizado inicializado');
 
       // Ejecutar algoritmo optimizado
       await Future.delayed(const Duration(milliseconds: 500));
-      final logsEjecucion = _algoritmoOptimizado.ejecutarCompleto();
+      final logsEjecucion = _algoritmoOptimizado!.ejecutarCompleto();
       
       _logsProceso.addAll(logsEjecucion);
       _logsProceso.add('✅ Algoritmo optimizado ejecutado exitosamente');
       
       // Generar resultado visual
-      _resultadoPlan = _generarPlanVisualOptimizado(_algoritmoOptimizado);
+      _resultadoPlan = _generarPlanVisualOptimizado(_algoritmoOptimizado!);
       
       print('✅ ALGORITMO OPTIMIZADO COMPLETADO');
       print('=' * 50);
@@ -360,100 +254,123 @@ class _WorkTabState extends State<WorkTab> {
     }
   }
 
-  String _generarPlanVisual(KitchenSchedulingAlgorithm algoritmo) {
-    final buffer = StringBuffer();
-    
-    buffer.writeln('📊 PLAN DE COCINA GENERADO');
-    buffer.writeln('=' * 40);
-    buffer.writeln();
-    
-    buffer.writeln('👨‍🍳 COCINEROS Y OLLAS:');
-    for (final cocinero in algoritmo.cocineros) {
-      buffer.writeln('${cocinero.nombre} (${cocinero.tipo}):');
-      if (cocinero.horario.isEmpty) {
-        buffer.writeln('  Sin tareas asignadas');
-      } else {
-        for (final item in cocinero.horario) {
-          final paso = algoritmo.pasos[item.pasoId];
-          buffer.writeln('  ${item.tiempoInicio}s - ${item.tiempoInicio + item.duracion}s: ${paso?.nombre ?? 'Paso desconocido'}');
+  // Ejecutar el algoritmo optimizado que alcanza el makespan óptimo
+  void _ejecutarAlgoritmoOptimizado() async {
+    if (_recetasSeleccionadas.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Seleccione al menos una receta')),
+      );
+      return;
+    }
+
+    setState(() {
+      _ejecutandoAlgoritmo = true;
+      _resultadoPlan = null;
+      _logsProceso = [];
+    });
+
+    try {
+      print('🚀 INICIANDO ALGORITMO DE SCHEDULING OPTIMIZADO');
+      print('=' * 50);
+      
+      _logsProceso.add('🚀 Iniciando algoritmo de scheduling optimizado...');
+      _logsProceso.add('📋 Recetas seleccionadas: ${_recetasSeleccionadas.toString()}');
+      _logsProceso.add('👨‍🍳 Cocineros: ${_recetasSeleccionadas.length}');
+      _logsProceso.add('🔧 Utensilios: ${_recetasSeleccionadas.length}');
+      _logsProceso.add('📝 Pasos totales: ${_recetasSeleccionadas.length}');
+
+      // Obtener datos de providers
+      final pasoProvider = Provider.of<PasoProvider>(context, listen: false);
+      final workersProvider = Provider.of<WorkersProvider>(context, listen: false);
+      final instrumentosProvider = Provider.of<InstrumentosProvider>(context, listen: false);
+      final recetaProvider = Provider.of<RecetaProvider>(context, listen: false);
+
+      // Obtener receta seleccionada (asumimos una receta para el ejemplo)
+      final recetaSeleccionadaId = _recetasSeleccionadas.keys.isNotEmpty ? _recetasSeleccionadas.keys.first : null;
+      final recetaEntries = recetaProvider.recetaEntries;
+      MapEntry<dynamic, Receta>? recetaEntrySeleccionada;
+      if (recetaSeleccionadaId != null) {
+        try {
+          recetaEntrySeleccionada = recetaEntries.firstWhere((r) => r.value.nombre == recetaSeleccionadaId);
+        } catch (_) {
+          recetaEntrySeleccionada = null;
         }
       }
-      buffer.writeln('  Tiempo total ocupado: ${cocinero.ori}s');
-      buffer.writeln();
-    }
-    
-    buffer.writeln('🔧 UTENSILIOS:');
-    for (final utensilio in algoritmo.utensilios) {
-      buffer.writeln('${utensilio.nombre} (${utensilio.tipo}):');
-      if (utensilio.horario.isEmpty) {
-        buffer.writeln('  Sin uso asignado');
-      } else {
-        for (final item in utensilio.horario) {
-          final paso = algoritmo.pasos[item.pasoId];
-          buffer.writeln('  ${item.tiempoInicio}s - ${item.tiempoInicio + item.duracion}s: ${paso?.nombre ?? 'Paso desconocido'}');
+      final recetaSeleccionada = recetaEntrySeleccionada?.value;
+      final pasos = pasoProvider.pasoEntries.map((e) => e.value).toList();
+      final workers = workersProvider.workers;
+      final instrumentos = instrumentosProvider.instrumentos;
+      final cantidadFinal = recetaSeleccionada != null ? recetaSeleccionada.cantidadPorciones.toDouble() : 1.0;
+
+      // Loteo óptimo de pasos
+      List<LoteoPasoResult> pasosLoteados = [];
+      if (recetaSeleccionada != null) {
+        pasosLoteados = LoteoOptimizer.optimizarLoteo(
+          receta: recetaSeleccionada,
+          pasos: pasos,
+          utensilios: instrumentos,
+          cantidadFinal: cantidadFinal,
+        );
+        print('🟢 Pasos loteados:');
+        for (final loteo in pasosLoteados) {
+          print('Paso: \'${loteo.paso.nombrePaso}\', Lote: \'${loteo.lote}/${loteo.totalLotes}\', Cantidad: \'${loteo.cantidad}\', Utensilio: \'${loteo.utensilio?.nombre ?? '-'}\'');
         }
       }
-      buffer.writeln('  Tiempo total ocupado: ${utensilio.ori}s');
-      buffer.writeln();
+      // --- LIMPIEZA FINAL DE CONVERSIÓN Y USO DE VARIABLES ---
+      final pasosScheduling = pasosLoteados.map((loteo) => PasoScheduling(
+        id: loteo.paso.id + '_lote${loteo.lote}',
+        nombre: loteo.paso.nombrePaso + (loteo.totalLotes > 1 ? ' (Lote ${loteo.lote}/${loteo.totalLotes})' : ''),
+        tipoCocinero: loteo.paso.tipoCocinero ?? 'cocinero',
+        tipoUtensilio: loteo.utensilio?.nombre ?? loteo.paso.tipoUtensilio ?? 'A',
+        duracion: (loteo.paso.tiempoCoccionSegundos + loteo.paso.tiempoPreparacionSegundos),
+        dependencias: (loteo.paso.dependencias ?? []),
+      )).toList();
+
+      final cocineros = _convertirWorkersACocineros(workers);
+      final utensiliosScheduling = _convertirInstrumentosAUtensilios(instrumentos);
+
+      _logsProceso.add('👨‍🍳 Cocineros: \'${cocineros.length}\'');
+      _logsProceso.add('🔧 Utensilios: \'${utensiliosScheduling.length}\'');
+      _logsProceso.add('📝 Pasos totales: \'${pasosScheduling.length}\'');
+      
+      // Inicializar algoritmo optimizado
+      _algoritmoOptimizado = SchedulingDinamicoAlgorithmOptimizado(
+        pasos: pasosScheduling,
+        cocineros: cocineros,
+        utensilios: utensiliosScheduling,
+      );
+
+      _logsProceso.add('⚙️ Algoritmo optimizado inicializado');
+
+      // Ejecutar algoritmo optimizado
+      await Future.delayed(const Duration(milliseconds: 500));
+      final logsEjecucion = _algoritmoOptimizado!.ejecutarCompleto();
+      
+      _logsProceso.addAll(logsEjecucion);
+      _logsProceso.add('✅ Algoritmo optimizado ejecutado exitosamente');
+      
+      // Generar resultado visual
+      _resultadoPlan = _generarPlanVisualOptimizado(_algoritmoOptimizado!);
+      
+      print('✅ ALGORITMO OPTIMIZADO COMPLETADO');
+      print('=' * 50);
+
+    } catch (e) {
+      print('❌ Error en algoritmo optimizado: $e');
+      _logsProceso.add('❌ Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al ejecutar algoritmo optimizado: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _ejecutandoAlgoritmo = false;
+        });
+      }
     }
-    
-    final tiempoTotal = algoritmo.cocineros.map((c) => c.ori).reduce((a, b) => a > b ? a : b);
-    buffer.writeln('⏱️ TIEMPO TOTAL DE COCINA: ${tiempoTotal}s (${(tiempoTotal / 60).toStringAsFixed(1)} minutos)');
-    
-    return buffer.toString();
   }
-
-  String _generarPlanVisualDinamico(SchedulingDinamicoAlgorithm algoritmo) {
-    final buffer = StringBuffer();
-    final estado = algoritmo.estadoActual!;
-    
-    buffer.writeln('📊 PLAN DE COCINA DINÁMICO GENERADO');
-    buffer.writeln('=' * 40);
-    buffer.writeln('⏰ Tiempo total de ejecución: ${estado.tiempoActual} segundos');
-    buffer.writeln('✅ Pasos completados: ${estado.pasosCompletados.length}/${estado.todosPasos.length}');
-    buffer.writeln();
-    
-    buffer.writeln('👨‍🍳 COCINEROS Y OLLAS:');
-    for (final cocinero in estado.cocineros) {
-      buffer.writeln('${cocinero.nombre} (${cocinero.tipo}):');
-      if (cocinero.horario.isEmpty) {
-        buffer.writeln('  Sin tareas asignadas');
-      } else {
-        for (final item in cocinero.horario) {
-          final pasosPorId = estado.todosPasos.where((p) => p.id == item.pasoId);
-          final paso = pasosPorId.isNotEmpty ? pasosPorId.first : null;
-          buffer.writeln('  ${item.tiempoInicio}s - ${item.tiempoInicio + item.duracion}s: ${paso?.nombre ?? 'Paso desconocido'}');
-        }
-      }
-      buffer.writeln();
-    }
-    
-    buffer.writeln('🔧 UTENSILIOS:');
-    for (final utensilio in estado.utensilios) {
-      buffer.writeln('${utensilio.nombre} (${utensilio.tipo}):');
-      if (utensilio.horario.isEmpty) {
-        buffer.writeln('  Sin uso asignado');
-      } else {
-        for (final item in utensilio.horario) {
-          final pasosList = estado.todosPasos.where((p) => p.id == item.pasoId).toList(); final paso = pasosList.isNotEmpty ? pasosList.first : null;
-          buffer.writeln('  ${item.tiempoInicio}s - ${item.tiempoInicio + item.duracion}s: ${paso?.nombre ?? 'Paso desconocido'}');
-        }
-      }
-      buffer.writeln();
-    }
-
-    buffer.writeln('📈 CRONOLOGÍA DE PASOS:');
-    final pasosOrdenados = estado.pasosCompletados.toList()
-      ..sort((PasoSchedulingDinamico a, PasoSchedulingDinamico b) => (a.tiempoInicio ?? 0).compareTo(b.tiempoInicio ?? 0));
-    
-    for (final paso in pasosOrdenados) {
-      buffer.writeln('T${paso.tiempoInicio}-T${paso.tiempoFin}: ${paso.nombre} (${paso.cocineroAsignado}+${paso.utensilioAsignado})');
-    }
-
-    return buffer.toString();
-  }
-
-
 
   String _generarPlanVisualOptimizado(SchedulingDinamicoAlgorithmOptimizado algoritmo) {
     if (algoritmo.estadoActual == null || 
@@ -840,7 +757,7 @@ class _WorkTabState extends State<WorkTab> {
 
   // Método para asignar tareas a los cocineros en la base de datos
   void _asignarTareasACocineros() async {
-    if (_algoritmoOptimizado.estadoActual == null) {
+    if (_algoritmoOptimizado?.estadoActual == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Primero debe generar un plan optimizado')),
       );
@@ -850,7 +767,7 @@ class _WorkTabState extends State<WorkTab> {
     try {
       print('📋 Iniciando asignación de tareas a cocineros...');
       
-      final estado = _algoritmoOptimizado.estadoActual!;
+      final estado = _algoritmoOptimizado!.estadoActual!;
       final pasosCompletados = estado.pasosCompletados;
       
       if (pasosCompletados.isEmpty) {
@@ -899,8 +816,6 @@ class _WorkTabState extends State<WorkTab> {
       }
 
       // Crear TareaAsignada para cada paso
-      int ordenGlobal = 1;
-      
       for (final entry in tareasPorCocinero.entries) {
         final cocineroId = entry.key;
         final tareasDelCocinero = entry.value;
@@ -936,7 +851,6 @@ class _WorkTabState extends State<WorkTab> {
           print('✅ Tarea creada: ${tareaAsignada.nombreTarea} para ${cocineroId} (T${ordenLocal})');
           
           ordenLocal++;
-          ordenGlobal++;
         }
       }
 

@@ -8,7 +8,7 @@ part of 'paso_scheduling.dart';
 
 class PasoSchedulingAdapter extends TypeAdapter<PasoScheduling> {
   @override
-  final int typeId = 13;
+  final int typeId = 12;
 
   @override
   PasoScheduling read(BinaryReader reader) {
@@ -22,15 +22,14 @@ class PasoSchedulingAdapter extends TypeAdapter<PasoScheduling> {
       tipoCocinero: fields[2] as String,
       tipoUtensilio: fields[3] as String,
       duracion: fields[4] as int,
-      dependencias: (fields[5] as List?)?.cast<String>(),
-      completado: fields[6] as bool,
+      dependencias: (fields[5] as List).cast<String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, PasoScheduling obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -42,9 +41,7 @@ class PasoSchedulingAdapter extends TypeAdapter<PasoScheduling> {
       ..writeByte(4)
       ..write(obj.duracion)
       ..writeByte(5)
-      ..write(obj.dependencias)
-      ..writeByte(6)
-      ..write(obj.completado);
+      ..write(obj.dependencias);
   }
 
   @override

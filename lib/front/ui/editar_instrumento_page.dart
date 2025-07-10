@@ -22,27 +22,19 @@ class _EditarInstrumentoPageState extends State<EditarInstrumentoPage> {
   late TextEditingController _nombreController;
   late TextEditingController _idController;
   late TextEditingController _descripcionController;
-  late TextEditingController _pesoController;
   late TextEditingController _cantidadController;
-  late TextEditingController _altoController;
-  late TextEditingController _anchoController;
-  late TextEditingController _profundidadController;
+  late TextEditingController _capacidadMaximaController;
+  String _tipo = 'Normal';
 
   @override
   void initState() {
     super.initState();
-    // Inicializar controladores con valores actuales
     _nombreController = TextEditingController(text: widget.instrumento.nombre);
     _idController = TextEditingController(text: widget.instrumento.id.toString());
     _descripcionController = TextEditingController(text: widget.instrumento.descripcion);
-    _pesoController = TextEditingController(text: widget.instrumento.peso.toString());
     _cantidadController = TextEditingController(text: widget.instrumento.cantidad.toString());
-    
-    // Dimensiones (asumiendo que son [alto, ancho, profundidad])
-    final dimensiones = widget.instrumento.dimensiones;
-    _altoController = TextEditingController(text: dimensiones.isNotEmpty ? dimensiones[0].toString() : '0');
-    _anchoController = TextEditingController(text: dimensiones.length > 1 ? dimensiones[1].toString() : '0');
-    _profundidadController = TextEditingController(text: dimensiones.length > 2 ? dimensiones[2].toString() : '0');
+    _tipo = widget.instrumento.tipo;
+    _capacidadMaximaController = TextEditingController(text: widget.instrumento.capacidadMaximaKg?.toString() ?? '');
   }
 
   @override
@@ -50,11 +42,8 @@ class _EditarInstrumentoPageState extends State<EditarInstrumentoPage> {
     _nombreController.dispose();
     _idController.dispose();
     _descripcionController.dispose();
-    _pesoController.dispose();
     _cantidadController.dispose();
-    _altoController.dispose();
-    _anchoController.dispose();
-    _profundidadController.dispose();
+    _capacidadMaximaController.dispose();
     super.dispose();
   }
 
@@ -64,19 +53,13 @@ class _EditarInstrumentoPageState extends State<EditarInstrumentoPage> {
         nombre: _nombreController.text,
         id: int.parse(_idController.text),
         descripcion: _descripcionController.text,
-        peso: double.parse(_pesoController.text),
-        dimensiones: [
-          double.parse(_altoController.text),
-          double.parse(_anchoController.text),
-          double.parse(_profundidadController.text),
-        ],
         cantidad: int.parse(_cantidadController.text),
+        tipo: _tipo,
+        capacidadMaximaKg: _tipo == 'Almacenamiento' ? double.tryParse(_capacidadMaximaController.text.trim().replaceAll(',', '.')) : null,
       );
-
       try {
         await Provider.of<InstrumentosProvider>(context, listen: false)
             .updateInstrumento(widget.instrumentoKey, instrumentoActualizado);
-        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Instrumento actualizado exitosamente')),
@@ -209,94 +192,6 @@ class _EditarInstrumentoPageState extends State<EditarInstrumentoPage> {
               ),
               const SizedBox(height: 16),
 
-              // Peso
-              TextFormField(
-                controller: _pesoController,
-                decoration: const InputDecoration(
-                  labelText: 'Peso (kg)',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingrese el peso';
-                  }
-                  if (double.tryParse(value) == null) {
-                    return 'Por favor ingrese un peso válido';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Dimensiones
-              Text('Dimensiones (cm)', style: textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _altoController,
-                      decoration: const InputDecoration(
-                        labelText: 'Alto',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.numberWithOptions(decimal: true),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Requerido';
-                        }
-                        if (double.tryParse(value) == null) {
-                          return 'Número válido';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _anchoController,
-                      decoration: const InputDecoration(
-                        labelText: 'Ancho',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.numberWithOptions(decimal: true),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Requerido';
-                        }
-                        if (double.tryParse(value) == null) {
-                          return 'Número válido';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _profundidadController,
-                      decoration: const InputDecoration(
-                        labelText: 'Profundidad',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.numberWithOptions(decimal: true),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Requerido';
-                        }
-                        if (double.tryParse(value) == null) {
-                          return 'Número válido';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
               // Cantidad
               TextFormField(
                 controller: _cantidadController,
@@ -306,22 +201,76 @@ class _EditarInstrumentoPageState extends State<EditarInstrumentoPage> {
                 ),
                 keyboardType: TextInputType.number,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingrese la cantidad';
-                  }
-                  if (int.tryParse(value) == null) {
-                    return 'Por favor ingrese un número válido';
-                  }
+                  if (value == null || value.isEmpty) return 'Ingrese una cantidad';
+                  if (int.tryParse(value.trim()) == null) return 'Debe ser un número entero válido';
+                  if (int.parse(value.trim()) < 0) return 'La cantidad no puede ser negativa';
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
-              // Botón de guardar
-              FilledButton.icon(
-                onPressed: _guardarCambios,
-                icon: const Icon(Icons.save),
-                label: const Text('Guardar Cambios'),
+              // Tipo
+              DropdownButtonFormField<String>(
+                value: _tipo,
+                decoration: const InputDecoration(
+                  labelText: 'Tipo de utensilio',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'Normal', child: Text('Normal')),
+                  DropdownMenuItem(value: 'Almacenamiento', child: Text('De almacenamiento')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _tipo = value ?? 'Normal';
+                  });
+                },
+              ),
+
+              // Capacidad máxima (solo si es de almacenamiento)
+              if (_tipo == 'Almacenamiento') ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _capacidadMaximaController,
+                  decoration: const InputDecoration(
+                    labelText: 'Capacidad máxima (kg)',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) {
+                    if (_tipo == 'Almacenamiento') {
+                      if (value == null || value.isEmpty) return 'Ingrese la capacidad máxima';
+                      final cleaned = value.trim().replaceAll(',', '.');
+                      if (double.tryParse(cleaned) == null) return 'Debe ser un número válido';
+                      if (double.parse(cleaned) <= 0) return 'Debe ser mayor a cero';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+
+              const SizedBox(height: 30),
+
+              // Botones de guardar y cancelar
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.save),
+                      label: const Text('Guardar'),
+                      onPressed: _guardarCambios,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.cancel),
+                      label: const Text('Cancelar'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

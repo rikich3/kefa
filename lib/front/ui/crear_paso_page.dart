@@ -266,43 +266,17 @@ class _CrearPasoPageState extends State<CrearPasoPage> {
                                                   _ingredientesRequeridos[index] = IngredienteRequerido(
                                                     ingredienteId: key,
                                                     cantidad: cantidad,
-                                                    unidadMedida: _ingredientesRequeridos[index].unidadMedida,
+                                                    unidadMedida: provider.ingredientesEntries[index].value.unidadMedida,
                                                   );
                                                 }
                                               },
                                             ),
                                           ),
                                           const SizedBox(width: 8),
-                                          SizedBox(
-                                            width: 100,
-                                            child: DropdownButtonFormField<String>(
-                                              value: existingIngredient.unidadMedida,
-                                              decoration: const InputDecoration(
-                                                border: OutlineInputBorder(),
-                                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                              ),
-                                              items: ['gr', 'ml', 'cc', 'taza', 'cuchara', 'cucharita']
-                                                  .map((unidad) => DropdownMenuItem(
-                                                        value: unidad,
-                                                        child: Text(unidad),
-                                                      ))
-                                                  .toList(),
-                                              onChanged: (String? newValue) {
-                                                if (newValue != null) {
-                                                  final index = _ingredientesRequeridos
-                                                      .indexWhere((req) => req.ingredienteId == key);
-                                                  if (index >= 0) {
-                                                    setModalState(() {
-                                                      _ingredientesRequeridos[index] = IngredienteRequerido(
-                                                        ingredienteId: key,
-                                                        cantidad: _ingredientesRequeridos[index].cantidad,
-                                                        unidadMedida: newValue,
-                                                      );
-                                                    });
-                                                  }
-                                                }
-                                              },
-                                            ),
+                                          // Mostrar la unidad de medida como texto, no editable
+                                          Text(
+                                            ingrediente.unidadMedida,
+                                            style: const TextStyle(fontWeight: FontWeight.bold),
                                           ),
                                         ],
                                       ),

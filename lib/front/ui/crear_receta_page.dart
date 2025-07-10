@@ -2,10 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../back/dataModels/receta.dart';
 import '../../front/state/receta_provider.dart';
-import 'crear_paso_page.dart';
+import '../../back/dataModels/paso.dart';
+import '../state/paso_provider.dart';
+import 'crear_paso_scheduling_page.dart';
+import '../state/ingredientes_provider.dart';
+import '../../back/dataModels/ingredientes.dart';
 
 class CrearRecetaPage extends StatefulWidget {
-  const CrearRecetaPage({super.key});
+  final Receta? recetaParaEditar;
+  final dynamic recetaKey;
+
+  const CrearRecetaPage({
+    super.key,
+    this.recetaParaEditar,
+    this.recetaKey,
+  });
 
   @override
   State<CrearRecetaPage> createState() => _CrearRecetaPageState();
@@ -16,81 +27,63 @@ class _CrearRecetaPageState extends State<CrearRecetaPage> {
   final _nombreController = TextEditingController();
   final _descripcionController = TextEditingController();
   final _porcionesController = TextEditingController();
-  final _duracionController = TextEditingController();
 
   String _categoriaSeleccionada = 'entrada';
   final List<String> _categorias = ['entrada', 'fondo', 'postre'];
 
-  List<String> _etiquetasSeleccionadas = [];
-  final List<String> _etiquetasDisponibles = [
-    'vegetariano',
-    'rapido',
-    'picante',
-    'ensalada',
-    'sarten',
-    'horno'
-  ];
+  Receta? _recetaCreada;
+  List<Paso> _pasos = [];
+  int _duracionTotalCalculada = 0;
+  bool _cargandoPasos = false;
 
-  Receta? _recetaCreada; // Para almacenar la receta después de crearla
-  int _siguienteOrdenPaso = 1;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.recetaParaEditar != null) {
+      _nombreController.text = widget.recetaParaEditar!.nombre;
+      _descripcionController.text = widget.recetaParaEditar!.descripcion;
+      _porcionesController.text = widget.recetaParaEditar!.cantidadPorciones.toString();
+      _categoriaSeleccionada = widget.recetaParaEditar!.categoria;
+      _recetaCreada = widget.recetaParaEditar;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _cargarPasos();
+      });
+    }
+  }
 
   @override
   void dispose() {
     _nombreController.dispose();
     _descripcionController.dispose();
     _porcionesController.dispose();
-    _duracionController.dispose();
     super.dispose();
   }
 
-  void _mostrarSelectorEtiquetas() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Seleccionar Etiquetas'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: _etiquetasDisponibles.map((etiqueta) {
-                    return CheckboxListTile(
-                      title: Text(etiqueta),
-                      value: _etiquetasSeleccionadas.contains(etiqueta),
-                      onChanged: (bool? value) {
-                        setState(() {
-                          if (value == true) {
-                            if (!_etiquetasSeleccionadas.contains(etiqueta)) {
-                              _etiquetasSeleccionadas.add(etiqueta);
-                            }
-                          } else {
-                            _etiquetasSeleccionadas.remove(etiqueta);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancelar'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    setState(() {}); // Actualizar la UI principal
-                  },
-                  child: const Text('Guardar'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+  void _cargarPasos() async {
+    if (_recetaCreada != null) {
+      setState(() {
+        _cargandoPasos = true;
+      });
+      final pasoProvider = Provider.of<PasoProvider>(context, listen: false);
+      await pasoProvider.loadPasosByRecetaId(_recetaCreada!.nombre);
+      _pasos = pasoProvider.pasosCurrentReceta
+          .map((entry) => entry.value)
+          .where((paso) => paso.recetaId == _recetaCreada!.nombre)
+          .toList();
+      _pasos.sort((a, b) => a.orden.compareTo(b.orden));
+      _calcularDuracionTotal();
+      if (mounted) {
+        setState(() {
+          _cargandoPasos = false;
+        });
+      }
+    }
+  }
+
+  void _calcularDuracionTotal() {
+    _duracionTotalCalculada = _pasos.fold(0, (total, paso) {
+      return total + paso.tiempoCoccionSegundos + paso.tiempoPreparacionSegundos;
+    });
   }
 
   void _guardarReceta() async {
@@ -100,11 +93,10 @@ class _CrearRecetaPageState extends State<CrearRecetaPage> {
         descripcion: _descripcionController.text,
         cantidadPorciones: int.parse(_porcionesController.text),
         categoria: _categoriaSeleccionada,
-        etiquetas: List.from(_etiquetasSeleccionadas),
-        duracionEstimadaMinutos: int.parse(_duracionController.text),
-        pasosIds: [], // Inicialmente vacío
+        etiquetas: [], // Puedes agregar lógica de etiquetas si lo deseas
+        duracionEstimadaMinutos: (_duracionTotalCalculada / 60).ceil(),
+        pasosIds: _pasos.map((p) => p.id).toList(),
       );
-
       try {
         await Provider.of<RecetaProvider>(context, listen: false).addReceta(receta);
         if (mounted) {
@@ -127,23 +119,139 @@ class _CrearRecetaPageState extends State<CrearRecetaPage> {
 
   void _agregarPaso() async {
     if (_recetaCreada != null) {
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CrearPasoPage(
-            recetaId: _recetaCreada!.nombre, // Usando nombre como ID
-            orden: _siguienteOrdenPaso,
+      final pasoProvider = Provider.of<PasoProvider>(context, listen: false);
+      await pasoProvider.loadPasosByRecetaId(_recetaCreada!.nombre);
+      if (mounted) {
+        final result = await showDialog<bool>(
+          context: context,
+          builder: (context) => CrearPasoSchedulingDialog(
+            recetaId: _recetaCreada!.nombre,
+            orden: _pasos.length + 1,
           ),
+        );
+        if (result == true && mounted) {
+          _cargarPasos();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Paso agregado exitosamente')),
+            );
+          }
+        }
+      }
+    }
+  }
+
+  void _editarPaso(Paso paso) async {
+    final pasoProvider = Provider.of<PasoProvider>(context, listen: false);
+    await pasoProvider.loadPasos();
+    await pasoProvider.loadPasosByRecetaId(_recetaCreada!.nombre);
+    if (mounted) {
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => CrearPasoSchedulingDialog(
+          recetaId: _recetaCreada!.nombre,
+          orden: paso.orden,
+          pasoParaEditar: paso,
         ),
       );
-      
       if (result == true && mounted) {
-        setState(() {
-          _siguienteOrdenPaso++;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Paso agregado exitosamente')),
-        );
+        _cargarPasos();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Paso actualizado exitosamente')),
+          );
+        }
+      }
+    }
+  }
+
+  void _eliminarPaso(Paso paso) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar eliminación'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('¿Está seguro que desea eliminar el paso "${paso.nombrePaso}"?'),
+            const SizedBox(height: 8),
+            Text(
+              'Esta acción también actualizará las dependencias de otros pasos que dependan de este.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      try {
+        final pasoProvider = Provider.of<PasoProvider>(context, listen: false);
+        await pasoProvider.loadPasos();
+        dynamic pasoKey;
+        try {
+          final entryGeneral = pasoProvider.pasoEntries
+              .firstWhere((entry) => entry.value.id == paso.id);
+          pasoKey = entryGeneral.key;
+        } catch (e) {
+          throw Exception('No se pudo encontrar el paso para eliminar. ID: ${paso.id}. Error: $e');
+        }
+        final todosLosPasos = pasoProvider.pasoEntries
+            .map((entry) => entry.value)
+            .where((p) => p.recetaId == _recetaCreada!.nombre && p.id != paso.id)
+            .toList();
+        for (var otroPaso in todosLosPasos) {
+          if (otroPaso.dependencias != null && otroPaso.dependencias!.contains(paso.id)) {
+            final nuevasDependencias = List<String>.from(otroPaso.dependencias!)..remove(paso.id);
+            final pasoActualizado = Paso(
+              id: otroPaso.id,
+              recetaId: otroPaso.recetaId,
+              nombrePaso: otroPaso.nombrePaso,
+              contenidoAccion: otroPaso.contenidoAccion,
+              recursosCocinasRequeridos: otroPaso.recursosCocinasRequeridos,
+              ingredientesRequeridos: otroPaso.ingredientesRequeridos,
+              recursoAlmacenamiento: otroPaso.recursoAlmacenamiento,
+              tiempoCoccionSegundos: otroPaso.tiempoCoccionSegundos,
+              tiempoPreparacionSegundos: otroPaso.tiempoPreparacionSegundos,
+              tipoCoccion: otroPaso.tipoCoccion,
+              tipoAlmacenamiento: otroPaso.tipoAlmacenamiento,
+              tareasAnterioresDirectas: otroPaso.tareasAnterioresDirectas,
+              orden: otroPaso.orden,
+              tipoCocinero: otroPaso.tipoCocinero,
+              tipoUtensilio: otroPaso.tipoUtensilio,
+              dependencias: nuevasDependencias,
+            );
+            try {
+              final otroEntry = pasoProvider.pasoEntries
+                  .firstWhere((entry) => entry.value.id == otroPaso.id);
+              await pasoProvider.updatePaso(otroEntry.key, pasoActualizado);
+            } catch (e) {}
+          }
+        }
+        await pasoProvider.deletePaso(pasoKey);
+        _cargarPasos();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Paso eliminado exitosamente')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al eliminar paso: $e')),
+          );
+        }
       }
     }
   }
@@ -152,7 +260,6 @@ class _CrearRecetaPageState extends State<CrearRecetaPage> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
       appBar: AppBar(
         title: Text('Crear Receta', style: textTheme.headlineSmall),
@@ -165,12 +272,12 @@ class _CrearRecetaPageState extends State<CrearRecetaPage> {
           key: _formKey,
           child: ListView(
             children: [
-              // Nombre de la receta
               TextFormField(
                 controller: _nombreController,
                 decoration: const InputDecoration(
                   labelText: 'Nombre de la receta',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.restaurant_menu),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -180,13 +287,12 @@ class _CrearRecetaPageState extends State<CrearRecetaPage> {
                 },
               ),
               const SizedBox(height: 16),
-
-              // Descripción
               TextFormField(
                 controller: _descripcionController,
                 decoration: const InputDecoration(
                   labelText: 'Descripción',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.description),
                 ),
                 maxLines: 3,
                 validator: (value) {
@@ -197,13 +303,12 @@ class _CrearRecetaPageState extends State<CrearRecetaPage> {
                 },
               ),
               const SizedBox(height: 16),
-
-              // Cantidad de porciones
               TextFormField(
                 controller: _porcionesController,
                 decoration: const InputDecoration(
                   labelText: 'Cantidad de porciones',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.people),
                 ),
                 keyboardType: TextInputType.number,
                 validator: (value) {
@@ -217,18 +322,17 @@ class _CrearRecetaPageState extends State<CrearRecetaPage> {
                 },
               ),
               const SizedBox(height: 16),
-
-              // Categoría
               DropdownButtonFormField<String>(
                 value: _categoriaSeleccionada,
                 decoration: const InputDecoration(
                   labelText: 'Categoría',
                   border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.category),
                 ),
                 items: _categorias.map((String categoria) {
                   return DropdownMenuItem<String>(
                     value: categoria,
-                    child: Text(categoria),
+                    child: Text(categoria.toUpperCase()),
                   );
                 }).toList(),
                 onChanged: (String? newValue) {
@@ -240,8 +344,6 @@ class _CrearRecetaPageState extends State<CrearRecetaPage> {
                 },
               ),
               const SizedBox(height: 16),
-
-              // Imagen representativa (placeholder)
               Container(
                 height: 120,
                 decoration: BoxDecoration(
@@ -259,7 +361,7 @@ class _CrearRecetaPageState extends State<CrearRecetaPage> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Imagen representativa\n(Próximamente)',
+                        'Imagen de la receta\n(Próximamente)',
                         style: textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -270,116 +372,248 @@ class _CrearRecetaPageState extends State<CrearRecetaPage> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Etiquetas
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Etiquetas: ${_etiquetasSeleccionadas.join(', ')}',
-                      style: textTheme.bodyMedium,
-                    ),
-                  ),
-                  FilledButton.icon(
-                    onPressed: _mostrarSelectorEtiquetas,
-                    icon: const Icon(Icons.tag),
-                    label: const Text('Seleccionar'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Duración estimada
-              TextFormField(
-                controller: _duracionController,
-                decoration: const InputDecoration(
-                  labelText: 'Duración estimada (minutos)',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingrese la duración estimada';
-                  }
-                  if (int.tryParse(value) == null) {
-                    return 'Por favor ingrese un número válido';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // Botón para agregar paso
-              OutlinedButton.icon(
-                onPressed: _recetaCreada != null ? _agregarPaso : () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Primero guarde la receta, luego podrá agregar pasos'),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.add_task),
-                label: Text(_recetaCreada != null ? 'Agregar paso' : 'Agregar paso (Guarde primero)'),
-              ),
-              const SizedBox(height: 16),
-
-              // Lista de pasos
               Container(
-                height: 100,
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  border: Border.all(color: colorScheme.outline),
+                  color: colorScheme.surfaceVariant,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Center(
-                  child: _recetaCreada == null 
-                    ? Text(
-                        'Lista de pasos\n(Se mostrará después de crear la receta)',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        textAlign: TextAlign.center,
-                      )
-                    : Text(
-                        'Pasos agregados: ${_siguienteOrdenPaso - 1}\n¡Listo para crear pasos de la receta!',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.primary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Botones de acción
-              if (_recetaCreada == null) ...[
-                // Botón de guardar (solo cuando no se ha guardado)
-                FilledButton.icon(
-                  onPressed: _guardarReceta,
-                  icon: const Icon(Icons.save),
-                  label: const Text('Guardar Receta'),
-                ),
-              ] else ...[
-                // Botones cuando ya se ha guardado la receta
-                Row(
+                child: Row(
                   children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _agregarPaso,
-                        icon: const Icon(Icons.add_task),
-                        label: const Text('Agregar Otro Paso'),
-                      ),
+                    Icon(
+                      Icons.timer,
+                      color: colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.check),
-                        label: const Text('Finalizar'),
-                      ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Duración estimada (autocalculada)',
+                          style: textTheme.labelMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Text(
+                          '${(_duracionTotalCalculada / 60).ceil()} minutos',
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.pop(context, false),
+                      icon: const Icon(Icons.cancel),
+                      label: const Text('Cancelar'),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: _guardarReceta,
+                      icon: const Icon(Icons.save),
+                      label: const Text('Guardar Receta'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: _agregarPaso,
+                icon: const Icon(Icons.add_task),
+                label: const Text('Agregar Paso'),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Pasos de la Receta',
+                style: textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (_cargandoPasos) ...[
+                Container(
+                  height: 120,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: colorScheme.outline),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Cargando pasos...'),
+                      ],
+                    ),
+                  ),
+                ),
+              ] else if (_pasos.isEmpty) ...[
+                Container(
+                  height: 120,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: colorScheme.outline),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.task_outlined,
+                          size: 48,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No hay pasos agregados\nComience agregando el primer paso',
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ] else ...[
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 1,
+                    childAspectRatio: 8,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 6,
+                  ),
+                  itemCount: _pasos.length,
+                  itemBuilder: (context, index) {
+                    final paso = _pasos[index];
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: colorScheme.onPrimary,
+                              radius: 14,
+                              child: Text(
+                                '${paso.orden}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    paso.nombrePaso,
+                                    style: textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    paso.contenidoAccion,
+                                    style: textTheme.bodySmall,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.timer,
+                                        size: 10,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        '${((paso.tiempoCoccionSegundos + paso.tiempoPreparacionSegundos) / 60).ceil()} min',
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (paso.ingredientesRequeridos.isNotEmpty) ...[
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Ingredientes:',
+                                      style: textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+                                    ),
+                                    ...paso.ingredientesRequeridos.map<Widget>((ing) {
+                                      // Buscar el nombre real del ingrediente
+                                      final ingredientesProvider = Provider.of<IngredientesProvider>(context, listen: false);
+                                      final nombreIngrediente = ingredientesProvider.ingredientesEntries.firstWhere(
+                                        (e) => e.key.toString() == ing.ingredienteId,
+                                        orElse: () => MapEntry(ing.ingredienteId, Ingredientes(
+                                          name: ing.ingredienteId,
+                                          descripcion: '',
+                                          unidadMedida: ing.unidadMedida,
+                                          cantidad: 0,
+                                          precio: 0.0,
+                                        )),
+                                      ).value.name;
+                                      return Padding(
+                                        padding: const EdgeInsets.only(left: 8, top: 2),
+                                        child: Row(
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                '$nombreIngrediente: ${ing.cantidad} ${ing.unidadMedida}',
+                                                style: textTheme.bodySmall,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  onPressed: () => _editarPaso(paso),
+                                  icon: const Icon(Icons.edit),
+                                  iconSize: 16,
+                                  tooltip: 'Editar',
+                                ),
+                                IconButton(
+                                  onPressed: () => _eliminarPaso(paso),
+                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  iconSize: 16,
+                                  tooltip: 'Eliminar',
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ],
+              const SizedBox(height: 24),
             ],
           ),
         ),

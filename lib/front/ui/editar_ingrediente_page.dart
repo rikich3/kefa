@@ -25,16 +25,7 @@ class _EditarIngredientePageState extends State<EditarIngredientePage> {
   late TextEditingController _precioController;
 
   String _unidadMedidaSeleccionada = 'gramos';
-  final List<String> _unidadesMedida = [
-    'gramos',
-    'kilogramos',
-    'mililitros',
-    'litros',
-    'unidades',
-    'tazas',
-    'cucharadas',
-    'cucharaditas'
-  ];
+  final List<String> _unidadesMedida = Ingredientes.unidadesMedidaDisponibles;
 
   @override
   void initState() {
@@ -222,6 +213,7 @@ class _EditarIngredientePageState extends State<EditarIngredientePage> {
                     });
                   }
                 },
+                validator: (value) => (value == null || value.isEmpty) ? 'Seleccione una unidad de medida' : null,
               ),
               const SizedBox(height: 16),
 

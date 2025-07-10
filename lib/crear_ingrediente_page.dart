@@ -18,16 +18,17 @@ class _CrearIngredientePageState extends State<CrearIngredientePage> {
   // Controladores para capturar el texto de cada campo
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descripcionController = TextEditingController();
-  final TextEditingController _unidadMedidaController = TextEditingController();
   final TextEditingController _cantidadController = TextEditingController();
   final TextEditingController _precioController = TextEditingController();
+
+  String _unidadMedidaSeleccionada = Ingredientes.unidadesMedidaDisponibles.first;
+  final List<String> _unidadesMedida = Ingredientes.unidadesMedidaDisponibles; // Lista de unidades de medida disponibles
 
   @override
   void dispose() {
     // Limpiar los controladores cuando el widget se elimine
     _nameController.dispose();
     _descripcionController.dispose();
-    _unidadMedidaController.dispose();
     _cantidadController.dispose();
     _precioController.dispose();
     super.dispose();
@@ -46,7 +47,7 @@ class _CrearIngredientePageState extends State<CrearIngredientePage> {
       final nuevoIngrediente = Ingredientes( // Usando el nombre de clase Ingredientes
         name: _nameController.text.trim(), // .trim() elimina espacios en blanco al inicio/fin
         descripcion: _descripcionController.text.trim(),
-        unidadMedida: _unidadMedidaController.text.trim(),
+        unidadMedida: _unidadMedidaSeleccionada,
         cantidad: int.parse(_cantidadController.text.trim()),
         precio: double.parse(_precioController.text.trim()),
       );
@@ -132,13 +133,26 @@ class _CrearIngredientePageState extends State<CrearIngredientePage> {
               const SizedBox(height: 20),
 
               // --- Campo Unidad de Medida ---
-              TextFormField(
-                controller: _unidadMedidaController, // Usar controlador
+              DropdownButtonFormField<String>(
+                value: _unidadMedidaSeleccionada,
                 decoration: const InputDecoration(
-                  labelText: 'Unidad de Medida (ej: gramos, ml, unidad)',
+                  labelText: 'Unidad de medida',
                   border: OutlineInputBorder(),
                 ),
-                 validator: (value) => (value == null || value.isEmpty) ? 'Ingrese una unidad de medida' : null, // Asumiendo que es obligatorio
+                items: _unidadesMedida.map((String unidad) {
+                  return DropdownMenuItem<String>(
+                    value: unidad,
+                    child: Text(unidad),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      _unidadMedidaSeleccionada = newValue;
+                    });
+                  }
+                },
+                validator: (value) => (value == null || value.isEmpty) ? 'Seleccione una unidad de medida' : null,
               ),
               const SizedBox(height: 20),
 

@@ -5,7 +5,7 @@ import '../../back/dataModels/paso.dart';
 // import '../../back/dataModels/worker.dart'; // Unused
 // import '../../back/dataModels/instrumentos.dart'; // Unused
 import '../state/paso_provider.dart';
-// import '../state/ingredientes_provider.dart'; // Unused
+import '../state/ingredientes_provider.dart'; // Unused
 // import '../state/workers_provider.dart'; // Unused
 // import '../state/instrumentos_provider.dart'; // Unused
 
@@ -271,6 +271,115 @@ class _EditarPasoPageState extends State<EditarPasoPage> {
                   hintText: 'Ej: refrigerado, congelado, temperatura ambiente',
                 ),
               ),
+              const SizedBox(height: 24),
+
+              // --- Ingredientes requeridos ---
+              Text('Ingredientes requeridos', style: Theme.of(context).textTheme.titleMedium),
+              Consumer<IngredientesProvider>(
+                builder: (context, provider, child) {
+                  return Column(
+                    children: provider.ingredientesEntries.map((entry) {
+                      final ingrediente = entry.value;
+                      final key = entry.key.toString();
+                      final existing = _ingredientesRequeridos.firstWhere(
+                        (req) => req.ingredienteId == key,
+                        orElse: () => IngredienteRequerido(ingredienteId: key, cantidad: 0, unidadMedida: ingrediente.unidadMedida),
+                      );
+                      final isSelected = _ingredientesRequeridos.any((req) => req.ingredienteId == key);
+                      return Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            children: [
+                              Checkbox(
+                                value: isSelected,
+                                onChanged: (bool? value) {
+                                  setState(() {
+                                    if (value == true) {
+                                      if (!isSelected) {
+                                        _ingredientesRequeridos.add(
+                                          IngredienteRequerido(
+                                            ingredienteId: key,
+                                            cantidad: 1.0,
+                                            unidadMedida: ingrediente.unidadMedida,
+                                          ),
+                                        );
+                                      }
+                                    } else {
+                                      _ingredientesRequeridos.removeWhere((req) => req.ingredienteId == key);
+                                    }
+                                  });
+                                },
+                              ),
+                              Expanded(child: Text(ingrediente.name)),
+                              if (isSelected) ...[
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 80,
+                                  child: TextFormField(
+                                    initialValue: existing.cantidad.toString(),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Cantidad',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    onChanged: (value) {
+                                      final cantidad = double.tryParse(value) ?? 1.0;
+                                      setState(() {
+                                        final idx = _ingredientesRequeridos.indexWhere((req) => req.ingredienteId == key);
+                                        if (idx >= 0) {
+                                          _ingredientesRequeridos[idx] = IngredienteRequerido(
+                                            ingredienteId: key,
+                                            cantidad: cantidad,
+                                            unidadMedida: ingrediente.unidadMedida,
+                                          );
+                                        }
+                                      });
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(ingrediente.unidadMedida, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              ],
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              // --- Dependencias de otros pasos ---
+              Text('Dependencias (otros pasos requeridos)', style: Theme.of(context).textTheme.titleMedium),
+              Consumer<PasoProvider>(
+                builder: (context, provider, child) {
+                  final otrosPasos = provider.pasoEntries
+                    .where((entry) => entry.value.recetaId == widget.paso.recetaId && entry.value.id != widget.paso.id)
+                    .toList();
+                  return Column(
+                    children: otrosPasos.map((entry) {
+                      final paso = entry.value;
+                      final isSelected = _tareasAnterioresSeleccionadas.contains(paso.id);
+                      return CheckboxListTile(
+                        value: isSelected,
+                        title: Text(paso.nombrePaso),
+                        subtitle: Text(paso.contenidoAccion),
+                        onChanged: (bool? value) {
+                          setState(() {
+                            if (value == true) {
+                              if (!isSelected) _tareasAnterioresSeleccionadas.add(paso.id);
+                            } else {
+                              _tareasAnterioresSeleccionadas.remove(paso.id);
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+
               const SizedBox(height: 24),
 
               // Botones de acción

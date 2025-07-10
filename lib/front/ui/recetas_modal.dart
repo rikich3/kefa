@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/receta_provider.dart';
-import 'crear_receta_nueva_page.dart';
+import 'crear_receta_page.dart';
+import 'editar_receta_page.dart';
 
 class RecetasModal extends StatefulWidget {
   const RecetasModal({super.key});
@@ -59,7 +60,7 @@ class _RecetasModalState extends State<RecetasModal> {
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const CrearRecetaNuevaPage(),
+                    builder: (context) => const CrearRecetaPage(),
                   ),
                 );
                 if (result == true && mounted) {
@@ -192,7 +193,7 @@ class _RecetasModalState extends State<RecetasModal> {
                               final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => CrearRecetaNuevaPage(
+                                  builder: (context) => EditarRecetaPage(
                                     recetaParaEditar: receta,
                                     recetaKey: key,
                                   ),

@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../back/dataModels/paso.dart';
 import '../../back/dataModels/instrumentos.dart';
+import '../../back/dataModels/ingredientes.dart';
 import '../state/paso_provider.dart';
-import '../state/ingredientes_provider.dart';
 import '../state/instrumentos_provider.dart';
+import '../state/ingredientes_provider.dart';
 
 class CrearPasoSchedulingDialog extends StatefulWidget {
   final String recetaId;
@@ -33,6 +34,7 @@ class _CrearPasoSchedulingDialogState extends State<CrearPasoSchedulingDialog> {
   String? _tipoUtensilioSeleccionado; // Cambiar a String? para permitir null inicialmente
   List<String> _dependenciasSeleccionadas = [];
   List<IngredienteRequerido> _ingredientesRequeridos = [];
+  final Map<String, TextEditingController> _cantidadControllers = {};
 
   final List<String> _tiposCocinero = ['cocinero', 'olla'];
 
@@ -96,12 +98,14 @@ class _CrearPasoSchedulingDialogState extends State<CrearPasoSchedulingDialog> {
                           itemBuilder: (context, index) {
                             final ingrediente = provider.ingredientesEntries[index].value;
                             final key = provider.ingredientesEntries[index].key.toString();
-                            
+                            final unidadIngrediente = ingrediente.unidadMedida;
                             final ingredientesEncontrados = _ingredientesRequeridos
                                 .where((req) => req.ingredienteId == key);
                             final existingIngredient = ingredientesEncontrados.isNotEmpty ? 
                                 ingredientesEncontrados.first : null;
-                            
+                            if (existingIngredient != null && !_cantidadControllers.containsKey(key)) {
+                              _cantidadControllers[key] = TextEditingController(text: existingIngredient.cantidad.toString());
+                            }
                             return Card(
                               child: Padding(
                                 padding: const EdgeInsets.all(8.0),
@@ -119,12 +123,13 @@ class _CrearPasoSchedulingDialogState extends State<CrearPasoSchedulingDialog> {
                                                   IngredienteRequerido(
                                                     ingredienteId: key,
                                                     cantidad: 1.0,
-                                                    unidadMedida: 'gr',
+                                                    unidadMedida: unidadIngrediente,
                                                   ),
                                                 );
+                                                _cantidadControllers[key] = TextEditingController(text: '1.0');
                                               } else {
-                                                _ingredientesRequeridos
-                                                    .removeWhere((req) => req.ingredienteId == key);
+                                                _ingredientesRequeridos.removeWhere((req) => req.ingredienteId == key);
+                                                _cantidadControllers.remove(key);
                                               }
                                             });
                                           },
@@ -141,61 +146,88 @@ class _CrearPasoSchedulingDialogState extends State<CrearPasoSchedulingDialog> {
                                       const SizedBox(height: 8),
                                       Row(
                                         children: [
-                                          SizedBox(
-                                            width: 80,
-                                            child: TextFormField(
-                                              initialValue: existingIngredient.cantidad.toString(),
-                                              decoration: const InputDecoration(
-                                                labelText: 'Cantidad',
-                                                border: OutlineInputBorder(),
-                                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                              ),
-                                              keyboardType: TextInputType.number,
-                                              onChanged: (value) {
-                                                final cantidad = double.tryParse(value) ?? 1.0;
-                                                final index = _ingredientesRequeridos
-                                                    .indexWhere((req) => req.ingredienteId == key);
+                                          IconButton(
+                                            icon: const Icon(Icons.arrow_drop_down, color: Colors.redAccent),
+                                            onPressed: () {
+                                              setModalState(() {
+                                                final index = _ingredientesRequeridos.indexWhere((req) => req.ingredienteId == key);
                                                 if (index >= 0) {
+                                                  final current = _ingredientesRequeridos[index];
+                                                  final newCantidad = (current.cantidad - 1).clamp(0, double.infinity).toDouble();
                                                   _ingredientesRequeridos[index] = IngredienteRequerido(
                                                     ingredienteId: key,
-                                                    cantidad: cantidad,
-                                                    unidadMedida: _ingredientesRequeridos[index].unidadMedida,
+                                                    cantidad: newCantidad,
+                                                    unidadMedida: current.unidadMedida,
                                                   );
+                                                  _cantidadControllers[key]?.text = newCantidad.toString();
+                                                }
+                                              });
+                                            },
+                                            tooltip: 'Reducir cantidad',
+                                          ),
+                                          SizedBox(
+                                            width: 60,
+                                            child: TextFormField(
+                                              controller: _cantidadControllers[key],
+                                              textAlign: TextAlign.center,
+                                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                              style: const TextStyle(fontWeight: FontWeight.bold),
+                                              decoration: const InputDecoration(
+                                                isDense: true,
+                                                contentPadding: EdgeInsets.symmetric(vertical: 4),
+                                                border: OutlineInputBorder(),
+                                              ),
+                                              onChanged: (value) {
+                                                final parsed = double.tryParse(value.replaceAll(',', '.'));
+                                                if (parsed != null && parsed >= 0) {
+                                                  setModalState(() {
+                                                    final idx = _ingredientesRequeridos.indexWhere((req) => req.ingredienteId == key);
+                                                    if (idx >= 0) {
+                                                      _ingredientesRequeridos[idx] = IngredienteRequerido(
+                                                        ingredienteId: key,
+                                                        cantidad: parsed,
+                                                        unidadMedida: existingIngredient.unidadMedida,
+                                                      );
+                                                    }
+                                                  });
                                                 }
                                               },
                                             ),
                                           ),
-                                          const SizedBox(width: 8),
-                                          SizedBox(
-                                            width: 100,
-                                            child: DropdownButtonFormField<String>(
-                                              value: existingIngredient.unidadMedida,
-                                              decoration: const InputDecoration(
-                                                border: OutlineInputBorder(),
-                                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                              ),
-                                              items: ['gr', 'ml', 'cc', 'taza', 'cuchara', 'cucharita']
-                                                  .map((unidad) => DropdownMenuItem(
-                                                        value: unidad,
-                                                        child: Text(unidad),
-                                                      ))
-                                                  .toList(),
-                                              onChanged: (String? newValue) {
-                                                if (newValue != null) {
-                                                  final index = _ingredientesRequeridos
-                                                      .indexWhere((req) => req.ingredienteId == key);
-                                                  if (index >= 0) {
-                                                    setModalState(() {
-                                                      _ingredientesRequeridos[index] = IngredienteRequerido(
-                                                        ingredienteId: key,
-                                                        cantidad: _ingredientesRequeridos[index].cantidad,
-                                                        unidadMedida: newValue,
-                                                      );
-                                                    });
-                                                  }
+                                          IconButton(
+                                            icon: const Icon(Icons.arrow_drop_up, color: Colors.green),
+                                            onPressed: () {
+                                              setModalState(() {
+                                                final index = _ingredientesRequeridos.indexWhere((req) => req.ingredienteId == key);
+                                                if (index >= 0) {
+                                                  final current = _ingredientesRequeridos[index];
+                                                  final newCantidad = current.cantidad + 1;
+                                                  _ingredientesRequeridos[index] = IngredienteRequerido(
+                                                    ingredienteId: key,
+                                                    cantidad: newCantidad,
+                                                    unidadMedida: current.unidadMedida,
+                                                  );
+                                                  _cantidadControllers[key]?.text = newCantidad.toString();
                                                 }
-                                              },
-                                            ),
+                                              });
+                                            },
+                                            tooltip: 'Aumentar cantidad',
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            child: Text(existingIngredient.unidadMedida, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete, color: Colors.red),
+                                            onPressed: () {
+                                              setModalState(() {
+                                                _ingredientesRequeridos.removeWhere((req) => req.ingredienteId == key);
+                                                _cantidadControllers.remove(key);
+                                              });
+                                            },
+                                            tooltip: 'Quitar ingrediente',
                                           ),
                                         ],
                                       ),
@@ -545,31 +577,41 @@ class _CrearPasoSchedulingDialogState extends State<CrearPasoSchedulingDialog> {
                       Consumer<InstrumentosProvider>(
                         builder: (context, instrumentosProvider, child) {
                           final instrumentos = instrumentosProvider.instrumentos;
-                          
-                          return DropdownButtonFormField<String>(
-                            value: _tipoUtensilioSeleccionado,
+                          int? selectedId;
+                          if (_tipoUtensilioSeleccionado != null && instrumentos.isNotEmpty) {
+                            final found = instrumentos.firstWhere(
+                              (i) => i.id.toString() == _tipoUtensilioSeleccionado,
+                              orElse: () => instrumentos.first,
+                            );
+                            selectedId = found.id;
+                          } else {
+                            selectedId = null;
+                          }
+                          return DropdownButtonFormField<int?>(
+                            value: selectedId,
                             decoration: const InputDecoration(
                               labelText: 'Tipo de Utensilio',
                               border: OutlineInputBorder(),
                               helperText: 'Selecciona el tipo de utensilio requerido',
                             ),
-                            items: instrumentos.map((Instrumento instrumento) {
-                              return DropdownMenuItem<String>(
-                                value: instrumento.nombre,
-                                child: Text('${instrumento.nombre} (${instrumento.cantidad} disponibles)'),
-                              );
-                            }).toList(),
-                            onChanged: (String? newValue) {
-                              if (newValue != null) {
-                                setState(() {
-                                  _tipoUtensilioSeleccionado = newValue;
-                                });
-                              }
+                            items: [
+                              const DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text('Ninguno'),
+                              ),
+                              ...instrumentos.map((Instrumento instrumento) {
+                                return DropdownMenuItem<int>(
+                                  value: instrumento.id,
+                                  child: Text(instrumento.nombre),
+                                );
+                              }).toList(),
+                            ],
+                            onChanged: (int? newId) {
+                              setState(() {
+                                _tipoUtensilioSeleccionado = newId?.toString();
+                              });
                             },
                             validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Debe seleccionar un tipo de utensilio';
-                              }
                               return null;
                             },
                           );
@@ -590,48 +632,45 @@ class _CrearPasoSchedulingDialogState extends State<CrearPasoSchedulingDialog> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  'Dependencias',
-                                  style: textTheme.labelLarge,
-                                ),
-                                FilledButton.icon(
+                                const Text('Dependencias', style: TextStyle(fontWeight: FontWeight.bold)),
+                                TextButton.icon(
                                   onPressed: _mostrarSelectorDependencias,
                                   icon: const Icon(Icons.edit),
                                   label: const Text('Editar'),
-                                  style: FilledButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Consumer<PasoProvider>(
-                              builder: (context, pasoProvider, child) {
-                                if (_dependenciasSeleccionadas.isEmpty) {
-                                  return Text(
-                                    'Sin dependencias',
-                                    style: textTheme.bodyMedium,
+                            if (_dependenciasSeleccionadas.isEmpty)
+                              const Text('Ninguna dependencia seleccionada'),
+                            if (_dependenciasSeleccionadas.isNotEmpty)
+                              Consumer<PasoProvider>(
+                                builder: (context, pasoProvider, child) {
+                                  return Wrap(
+                                    spacing: 8,
+                                    children: _dependenciasSeleccionadas.map((depId) {
+                                      final paso = pasoProvider.pasoEntries.firstWhere(
+                                        (e) => e.value.id == depId,
+                                        orElse: () => MapEntry(depId, Paso(
+                                          id: depId,
+                                          recetaId: '',
+                                          nombrePaso: depId,
+                                          contenidoAccion: '',
+                                          recursosCocinasRequeridos: [],
+                                          ingredientesRequeridos: [],
+                                          recursoAlmacenamiento: [],
+                                          tiempoCoccionSegundos: 0,
+                                          tiempoPreparacionSegundos: 0,
+                                          tipoCoccion: '',
+                                          tipoAlmacenamiento: '',
+                                          tareasAnterioresDirectas: [],
+                                          orden: 0,
+                                        )),
+                                      ).value;
+                                      return Chip(label: Text(paso.nombrePaso));
+                                    }).toList(),
                                   );
-                                }
-                                
-                                // Buscar los nombres de los pasos seleccionados
-                                final nombresDependencias = _dependenciasSeleccionadas.map((pasoId) {
-                                  // Buscar el paso por ID en la lista de pasos actuales
-                                  try {
-                                    final pasoEncontrado = pasoProvider.pasosCurrentReceta
-                                        .firstWhere((entry) => entry.value.id == pasoId);
-                                    return pasoEncontrado.value.nombrePaso;
-                                  } catch (e) {
-                                    return 'Paso no encontrado ($pasoId)';
-                                  }
-                                }).join(', ');
-
-                                return Text(
-                                  'Depende de: $nombresDependencias',
-                                  style: textTheme.bodyMedium,
-                                );
-                              },
-                            ),
+                                },
+                              ),
                           ],
                         ),
                       ),
@@ -651,26 +690,129 @@ class _CrearPasoSchedulingDialogState extends State<CrearPasoSchedulingDialog> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Ingredientes Requeridos',
-                            style: textTheme.titleMedium,
-                          ),
+                          const Text('Ingredientes requeridos', style: TextStyle(fontWeight: FontWeight.bold)),
                           FilledButton.icon(
                             onPressed: _mostrarSelectorIngredientes,
                             icon: const Icon(Icons.add),
-                            label: const Text('Seleccionar'),
+                            label: const Text('Agregar'),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      if (_ingredientesRequeridos.isNotEmpty) ...[
-                        for (var req in _ingredientesRequeridos)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Text('• ${req.cantidad} ${req.unidadMedida}'),
-                          ),
-                      ] else
-                        const Text('Ningún ingrediente seleccionado'),
+                      if (_ingredientesRequeridos.isEmpty)
+                        const Text('No hay ingredientes seleccionados'),
+                      if (_ingredientesRequeridos.isNotEmpty)
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _ingredientesRequeridos.length,
+                          itemBuilder: (context, index) {
+                            final req = _ingredientesRequeridos[index];
+                            final ingrediente = Provider.of<IngredientesProvider>(context, listen: false)
+                                .ingredientesEntries
+                                .firstWhere(
+                                  (e) => e.key.toString() == req.ingredienteId,
+                                  orElse: () => MapEntry(
+                                    req.ingredienteId,
+                                    Ingredientes(
+                                      name: req.ingredienteId,
+                                      descripcion: '',
+                                      unidadMedida: req.unidadMedida,
+                                      cantidad: 0,
+                                      precio: 0.0,
+                                    ),
+                                  ),
+                                )
+                                .value;
+                            _cantidadControllers[req.ingredienteId] ??= TextEditingController(text: req.cantidad.toString());
+                            return Card(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        ingrediente.name,
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.remove, color: Colors.redAccent),
+                                      onPressed: () {
+                                        setState(() {
+                                          final newCantidad = (req.cantidad - 1).clamp(0, double.infinity).toDouble();
+                                          _ingredientesRequeridos[index] = IngredienteRequerido(
+                                            ingredienteId: req.ingredienteId,
+                                            cantidad: newCantidad,
+                                            unidadMedida: req.unidadMedida,
+                                          );
+                                          _cantidadControllers[req.ingredienteId]?.text = newCantidad.toString();
+                                        });
+                                      },
+                                      tooltip: 'Reducir cantidad',
+                                    ),
+                                    SizedBox(
+                                      width: 60,
+                                      child: TextFormField(
+                                        controller: _cantidadControllers[req.ingredienteId],
+                                        textAlign: TextAlign.center,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                        decoration: const InputDecoration(
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(vertical: 4),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        onChanged: (value) {
+                                          final parsed = double.tryParse(value.replaceAll(',', '.'));
+                                          if (parsed != null && parsed >= 0) {
+                                            setState(() {
+                                              _ingredientesRequeridos[index] = IngredienteRequerido(
+                                                ingredienteId: req.ingredienteId,
+                                                cantidad: parsed,
+                                                unidadMedida: req.unidadMedida,
+                                              );
+                                            });
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.add, color: Colors.green),
+                                      onPressed: () {
+                                        setState(() {
+                                          final newCantidad = req.cantidad + 1;
+                                          _ingredientesRequeridos[index] = IngredienteRequerido(
+                                            ingredienteId: req.ingredienteId,
+                                            cantidad: newCantidad,
+                                            unidadMedida: req.unidadMedida,
+                                          );
+                                          _cantidadControllers[req.ingredienteId]?.text = newCantidad.toString();
+                                        });
+                                      },
+                                      tooltip: 'Aumentar cantidad',
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      child: Text(req.unidadMedida, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      onPressed: () {
+                                        setState(() {
+                                          _ingredientesRequeridos.removeAt(index);
+                                          _cantidadControllers.remove(req.ingredienteId);
+                                        });
+                                      },
+                                      tooltip: 'Quitar ingrediente',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                     ],
                   ),
                 ),
@@ -679,27 +821,23 @@ class _CrearPasoSchedulingDialogState extends State<CrearPasoSchedulingDialog> {
 
               // Botones de acción
               Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Cancelar'),
-                    ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancelar'),
                   ),
                   const SizedBox(width: 16),
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: _guardarPaso,
-                      icon: Icon(_esEdicion ? Icons.save : Icons.add_task),
-                      label: Text(_esEdicion ? 'Actualizar' : 'Crear Paso'),
-                    ),
+                  FilledButton(
+                    onPressed: _guardarPaso,
+                    child: Text(_esEdicion ? 'Guardar Cambios' : 'Crear Paso'),
                   ),
                 ],
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
+      ), // Cierre de Container
+    ); // Cierre de Dialog
+  } // Cierre de build
+} // Cierre de clase

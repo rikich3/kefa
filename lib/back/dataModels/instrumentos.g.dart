@@ -20,9 +20,9 @@ class InstrumentoAdapter extends TypeAdapter<Instrumento> {
       nombre: fields[0] as String,
       id: fields[1] as int,
       descripcion: fields[2] as String,
-      peso: fields[3] as double,
-      dimensiones: (fields[4] as List).cast<double>(),
-      cantidad: fields[5] as int,
+      cantidad: fields[3] as int,
+      tipo: fields[4] as String,
+      capacidadMaximaKg: fields[5] as double?,
     );
   }
 
@@ -37,11 +37,11 @@ class InstrumentoAdapter extends TypeAdapter<Instrumento> {
       ..writeByte(2)
       ..write(obj.descripcion)
       ..writeByte(3)
-      ..write(obj.peso)
+      ..write(obj.cantidad)
       ..writeByte(4)
-      ..write(obj.dimensiones)
+      ..write(obj.tipo)
       ..writeByte(5)
-      ..write(obj.cantidad);
+      ..write(obj.capacidadMaximaKg);
   }
 
   @override

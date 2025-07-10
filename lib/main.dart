@@ -40,7 +40,7 @@ import 'front/state/paso_provider.dart';
 import 'front/state/tarea_asignada_provider.dart';
 
 import 'home_page.dart';
-
+import 'back/algorithms/scheduling_dinamico_algorithm_optimizado.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,11 +58,7 @@ void main() async {
   Hive.registerAdapter(HorarioItemAdapter());
   Hive.registerAdapter(CocineroSchedulingAdapter());
   Hive.registerAdapter(UtensilioSchedulingAdapter());
-  Hive.registerAdapter(PasoSchedulingAdapter());
-  Hive.registerAdapter(EstadoPasoAdapter());
-  Hive.registerAdapter(PasoSchedulingDinamicoAdapter());
   Hive.registerAdapter(EstadoSchedulingAdapter());
-  Hive.registerAdapter(TareaAsignadaAdapter());
   
   // Test de persistencia
   print('🔬 Ejecutando test de persistencia...');

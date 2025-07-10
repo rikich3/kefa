@@ -1,8 +1,9 @@
 import 'package:hive/hive.dart';
+import '../algorithms/scheduling_dinamico_algorithm_optimizado.dart';
 
 part 'paso_scheduling.g.dart';
 
-@HiveType(typeId: 13)
+@HiveType(typeId: 12)
 class PasoScheduling extends HiveObject {
   @HiveField(0)
   String id;
@@ -11,19 +12,16 @@ class PasoScheduling extends HiveObject {
   String nombre;
 
   @HiveField(2)
-  String tipoCocinero; // 'cocinero' o 'olla'
+  String tipoCocinero;
 
   @HiveField(3)
-  String tipoUtensilio; // tipo de utensilio requerido
+  String tipoUtensilio;
 
   @HiveField(4)
-  int duracion; // tiempo que demora en segundos
+  int duracion;
 
   @HiveField(5)
-  List<String> dependencias; // IDs de pasos que deben completarse antes
-
-  @HiveField(6)
-  bool completado;
+  List<String> dependencias;
 
   PasoScheduling({
     required this.id,
@@ -31,12 +29,6 @@ class PasoScheduling extends HiveObject {
     required this.tipoCocinero,
     required this.tipoUtensilio,
     required this.duracion,
-    List<String>? dependencias,
-    this.completado = false,
-  }) : dependencias = dependencias ?? [];
-
-  @override
-  String toString() {
-    return '$nombre (${tipoCocinero}, ${tipoUtensilio}, ${duracion}s) - deps: $dependencias';
-  }
+    required this.dependencias,
+  });
 }

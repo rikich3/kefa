@@ -14,20 +14,20 @@ class Instrumento extends HiveObject {
   String descripcion;
 
   @HiveField(3)
-  double peso;
+  int cantidad;
 
   @HiveField(4)
-  List<double> dimensiones;
+  String tipo; // "Normal" o "Almacenamiento"
 
   @HiveField(5)
-  int cantidad;
+  double? capacidadMaximaKg; // Solo si es de almacenamiento
 
   Instrumento({
     required this.nombre,
     required this.id,
     required this.descripcion,
-    required this.peso,
-    required this.dimensiones,
     required this.cantidad,
+    required this.tipo,
+    this.capacidadMaximaKg,
   });
 }

@@ -9,7 +9,7 @@ class Ingredientes{
   @HiveField(1)
   final String descripcion;
   @HiveField(2)
-  final String unidadMedida;
+  final String unidadMedida; // Debe ser una de las opciones de unidadesMedidaDisponibles
   @HiveField(3)
   final int cantidad;
   @HiveField(4)
@@ -21,4 +21,17 @@ class Ingredientes{
     required this. cantidad,
     required this. precio
   });
+
+  static const List<String> unidadesMedidaDisponibles = [
+    'gramos',
+    'kilogramos',
+    'mililitros',
+    'litros',
+    'unidades',
+    'tazas',
+    'cucharadas',
+    'cucharaditas',
+    'pizca',
+    'ramo',
+  ];
 }
