@@ -36,6 +36,11 @@ class TareaAsignadaProvider extends ChangeNotifier {
   int get totalTareas => _tareasPorCocinero.values
       .fold(0, (total, tareas) => total + tareas.length);
 
+  // Getter para obtener todas las tareas asignadas (sin agrupar)
+  List<TareaAsignada> get todasLasTareasAsignadas {
+    return _tareasPorCocinero.values.expand((list) => list).toList();
+  }
+
   // Cargar todas las tareas
   Future<void> cargarTareas() async {
     _isLoading = true;
@@ -92,6 +97,11 @@ class TareaAsignadaProvider extends ChangeNotifier {
       print('❌ Error en borrarTodasLasTareas: $e');
       notifyListeners();
     }
+  }
+
+  // Limpiar todas las tareas (alias para borrarTodasLasTareas)
+  Future<void> limpiarTareas() async {
+    await borrarTodasLasTareas();
   }
 
   // Verificar si un cocinero tiene tareas asignadas

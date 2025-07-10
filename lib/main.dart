@@ -59,6 +59,7 @@ void main() async {
   Hive.registerAdapter(CocineroSchedulingAdapter());
   Hive.registerAdapter(UtensilioSchedulingAdapter());
   Hive.registerAdapter(EstadoSchedulingAdapter());
+  Hive.registerAdapter(TareaAsignadaAdapter());
   
   // Test de persistencia
   print('🔬 Ejecutando test de persistencia...');
