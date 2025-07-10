@@ -37,7 +37,7 @@ class SistemaPreprocesamiento {
   void _inicializarAgendas() {
     // Inicializar agendas de trabajadores
     for (final trabajador in trabajadoresDisponibles) {
-      _agendasTrabajadores[trabajador.nombre] = Agenda(
+      _agendasTrabajadores[trabajador.funcion] = Agenda(
         requisitoId: trabajador.id.toString(),
         requisitoNombre: trabajador.nombre,
         tipo: TipoRequisito.trabajador,
