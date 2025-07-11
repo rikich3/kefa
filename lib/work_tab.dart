@@ -648,20 +648,31 @@ class _WorkTabState extends State<WorkTab> {
       tareasPorCocinero.putIfAbsent(tarea.cocineroId, () => []).add(tarea);
     }
     final widgets = <Widget>[];
-    tareasPorCocinero.forEach((cocinero, tareas) {
+    for (final cocinero in tareasPorCocinero.keys) {
       widgets.add(Text('👨‍🍳 $cocinero', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)));
-      tareas.sort((a, b) => a.tiempoInicioSegundos.compareTo(b.tiempoInicioSegundos));
-      for (final tarea in tareas) {
+      final tareasCocinero = tareasPorCocinero[cocinero]!;
+      tareasCocinero.sort((a, b) => a.tiempoInicioSegundos.compareTo(b.tiempoInicioSegundos));
+      for (final tarea in tareasCocinero) {
+        // Buscar si el utensilio principal es de almacenamiento
+        String tipoUtensilio = 'Normal';
+        if (tarea.utensiliosRequeridos.isNotEmpty) {
+          final instrumentosProvider = Provider.of<InstrumentosProvider>(context, listen: false);
+          final instrumento = instrumentosProvider.instrumentos.firstWhere(
+            (i) => i.nombre == tarea.utensiliosRequeridos.first,
+            orElse: () => Instrumento(nombre: tarea.utensiliosRequeridos.first, id: 0, descripcion: '', cantidad: 1, tipo: 'Normal'),
+          );
+          tipoUtensilio = instrumento.tipo;
+        }
         widgets.add(Padding(
           padding: const EdgeInsets.only(left: 16.0, bottom: 8.0),
           child: Text(
-            '${tarea.nombreTarea} | 🕒 ${tarea.tiempoInicioFormateado} - ${tarea.tiempoFinSegundos}s | 🔧 ${tarea.utensiliosRequeridos.join(", ")}',
+            '${tarea.nombreTarea} | 🕒 ${tarea.tiempoInicioFormateado} - ${tarea.tiempoFinSegundos}s | 🔧 ${tarea.utensiliosRequeridos.join(", ")} | ${tipoUtensilio == 'Almacenamiento' ? 'Almacenado' : 'No almacenado'}',
             style: textTheme.bodyMedium,
           ),
         ));
       }
       widgets.add(const SizedBox(height: 16));
-    });
+    }
     return widgets;
   }
 
@@ -869,6 +880,18 @@ class _WorkTabState extends State<WorkTab> {
                 ],
                 const SizedBox(height: 8),
               ],
+
+              // Botón para ver agendas de cocineros
+              FilledButton.icon(
+                onPressed: _visualizarTareasAsignadas,
+                icon: const Icon(Icons.calendar_view_day),
+                label: const Text('Ver Agendas de Cocineros'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  padding: const EdgeInsets.all(16),
+                ),
+              ),
+              const SizedBox(height: 16),
 
               // Logs del proceso
               if (_logsProceso.isNotEmpty) ...[
